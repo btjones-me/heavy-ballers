@@ -88,3 +88,15 @@ Local ignored `qa/` artifacts retain the public screenshot and concise result/ad
 - A rejected rate-limited reset preserves the visitor’s current session. Reset does not clear global AI spending or modify historical data.
 - Local real GPT-6 Luna → HTTP MCP → D1 verification used Chrome and the in-app browser: Chrome saved 4–2 while the in-app browser independently saved 3–1. Reset in Chrome cleared its result, chat and traces; the other browser retained 3–1, including after reload.
 - The visitor controls now include Reset demo, with a fresh token and private fictional season for each reset. Old polling responses cannot replace the new owner or its league data.
+
+## Live API report robustness — 30 September 2026
+
+- 40 deterministic tests pass, including the observed mixed payload: historical unsaved scorers plus a current shootout result. The shootout is saved through HTTP MCP while the unsupported scorer group stays unchanged.
+- The built production Worker ran in workerd against isolated local D1 storage and the real GPT-6 Luna Responses API. The final live smoke pass verified 13 message cases, actual MCP writes and public bootstrap readbacks. No LLM responses or MCP writes were mocked.
+- The five UI script messages each saved their expected intermediate facts, ending Queens 4–2 NetSix, Alfie 2 / Sam K 1 / Ben 1, Leo 1 / Jamie 1, and match points 3/1. The UI and smoke runner import the same script.
+- Ambiguous Sam and unknown Dave were left unsaved with specific questions. A subsequent shootout-only message saved normally. First-person brace, aliases, “Me and Jamie”, a 5–2 correction, duplicate delivery without another paid call, separate visitors and private reset passed.
+- Save acknowledgements and the next missing question are generated from the persisted fixture; the final pass correctly asked for NetSix scorers after Queens scorers were complete.
+- Both live validation passes shared one retained budget ledger: 76 Responses API calls, conservative accounted cost **$0.033921625**, below the **$0.20 total ceiling**. No allowance was reset between passes. The gateway reserves before dispatch and retains the full reservation on uncertain outcomes.
+- Evidence: ignored `qa/live-smoke-report.json` and `qa/live-smoke-budget.json`. Run `npm run test:live` explicitly; it builds and runs the live suite, returning nonzero on any assertion failure. The HTTP presentation client tests the readiness handshake; this is not a browser pixel/animation test.
+
+- Final review narrowed first-person subject matching. Deterministic regressions accept “Me and Jamie scored” but reject treating “Sam told me Alfie scored” as evidence that the sender scored.

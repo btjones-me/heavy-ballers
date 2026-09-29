@@ -1,4 +1,5 @@
 'use client';
+import { DEMO_SCRIPT as SCRIPT } from '../lib/demo-script';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X, Phone, Video, MoreVertical, Send, Play, Pause, LockKeyhole, ChevronDown, CheckCheck, Bot, Smile, Paperclip, AlertCircle, Radio, LoaderCircle, RotateCcw } from 'lucide-react';
 import './demo.css';
@@ -14,7 +15,7 @@ const PROGRESS_KEY = 'heavy-ballers-demo-progress';
 const PENDING_KEY = 'heavy-ballers-demo-pending';
 const STEP_ID_KEY = 'heavy-ballers-demo-message-ids';
 const senders = [{ id: 'ben', label: 'Ben J', team: 'Queens', color: '#7eccad' }, { id: 'alfie', label: 'Alfie H', team: 'Queens', color: '#b2a0e9' }, { id: 'sam', label: 'Sam K', team: 'Queens', color: '#ecac8b' }, { id: 'leo', label: 'Leo M', team: 'NetSix', color: '#75bee2' }];
-const SCRIPT = [{ senderId: 'ben', text: 'We won 4–2.' }, { senderId: 'alfie', text: 'Alfie H scored two for Queens.' }, { senderId: 'sam', text: 'Sam K got one and Ben J got the other for Queens.' }, { senderId: 'leo', text: 'Leo M and Jamie R got one each for NetSix.' }, { senderId: 'ben', text: 'NetSix won the penalty shootout.' }];
+
 const normalizedText = (value: string) => value.replace(/[–—−]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 const progressFrom = (messages: Message[]) => { let count = 0; for (const step of SCRIPT) { if (messages.some(m => normalizedText(m.text) === normalizedText(step.text))) count++; else break; } return count; };
 function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }

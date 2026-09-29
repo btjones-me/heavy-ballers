@@ -280,12 +280,11 @@ test('deterministic guard rejects the observed uncertain score and invented Dave
   await withProvider(propose({ homeScore: 5, awayScore: 2 }), async () => { await api.receiveMessage(demoRequest('message', started.token, chatMessage('guard-uncertain-0001', 'I think the score was 5-2.'))); }, track);
   let state = await api.getBootstrap(), match = state.fixtures.find(match => match.id === 'demo-gw7-1');
   assert.equal(writeCalls, 0); assert.equal(match.homeScore, 4); assert.equal(match.version, 1);
-  const latest = database.prepare("SELECT text FROM messages WHERE role='assistant' ORDER BY createdAt DESC,id DESC LIMIT 1").get();
-  assert.match(latest.text, /Is 5–2 a correction/);
+  assert.ok(database.prepare("SELECT id FROM events WHERE payload LIKE '%SCORE_CONFIRMATION%'").get());
   await withProvider(propose({ homeScorers: [...match.homeScorers, { playerId: 'qpr-ollie', goals: 1 }] }), async () => { await api.receiveMessage(demoRequest('message', started.token, chatMessage('guard-dave-0001', 'Dave scored one of our goals.'))); }, track);
   state = await api.getBootstrap(); match = state.fixtures.find(match => match.id === 'demo-gw7-1');
   assert.equal(writeCalls, 0); assert.equal(match.version, 1); assert.ok(!match.homeScorers.some(scorer => scorer.playerId === 'qpr-ollie'));
-  assert.ok(database.prepare("SELECT text FROM messages WHERE text LIKE 'I can’t match that scorer%'").get());
+  assert.ok(database.prepare("SELECT id FROM events WHERE payload LIKE '%SCORER_NOT_GROUNDED%'").get());
   await withProvider(propose({ homeScore: 5, awayScore: 2 }), async () => { await api.receiveMessage(demoRequest('message', started.token, chatMessage('guard-correct-0001', 'Correction: the correct score was 5-2.'))); }, track);
   assert.equal(writeCalls, 1); assert.equal((await api.getBootstrap()).fixtures.find(match => match.id === 'demo-gw7-1').homeScore, 5);
 });
@@ -300,6 +299,8 @@ test('guard grounds initial scores, scorer aliases and pronouns, and shootout wi
   assert.equal(api.guardMatchReport(report, { homeScorers: [{ playerId: 'qpr-alfie', goals: 2 }] }, ben('Alfie got two')).ok, true);
   assert.equal(api.guardMatchReport(report, { homeScorers: [{ playerId: 'qpr-alfie', goals: 2 }] }, ben('Alfieville got two')).code, 'SCORER_NOT_GROUNDED');
   assert.equal(api.guardMatchReport(report, { homeScorers: [{ playerId: 'qpr-ben', goals: 1 }] }, ben('I scored one')).ok, true);
+  assert.equal(api.guardMatchReport(report, { homeScorers: [{ playerId: 'qpr-ben', goals: 2 }] }, ben('Sam told me Alfie scored two.')).code, 'SCORER_NOT_GROUNDED');
+  assert.equal(api.guardMatchReport(report, { awayScorers: [{ playerId: 'net-leo', goals: 1 },{ playerId: 'net-jamie', goals: 1 }] }, {text:'Me and Jamie scored one each for NetSix.',senderName:'Leo M',teamId:'net'}).ok,true);
   const ambiguous = { ...report, awaySquad: [...report.awaySquad, { id: 'net-alfie', teamId: 'net', name: 'Alfie X', aliases: ['Alfie'] }] };
   assert.equal(api.guardMatchReport(ambiguous, { homeScorers: [{ playerId: 'qpr-alfie', goals: 2 }] }, ben('Alfie got two')).code, 'SCORER_NOT_GROUNDED');
   assert.equal(api.guardMatchReport(report, { shootoutWinnerId: 'net' }, ben('NetSix won the shootout')).ok, true);
@@ -499,4 +500,34 @@ test('private season CAS prevents lost updates on different fixtures and MCP sco
   for(const r of results.filter(r=>r.status==='rejected')) assert.equal(r.reason.code,'STALE_VERSION');
   const request=new Request('https://ballers.test/api/mcp',{method:'POST',headers:{'content-type':'application/json','x-demo-session':scope},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'get_match_report',arguments:{fixtureId:'demo-gw7-1'}}})});
   assert.equal((await api.handleMcp(request)).status,401);
+});
+
+test('report preparation repairs exact roster spelling and isolates shootouts from unrelated scorer failures',async()=>{
+  const token=(await startVisitor()).token,scope=await api.visitorScope(demoRequest('state',token));
+  const report=await api.withDemoScope(scope,()=>api.callMcpTool('get_match_report',{fixtureId:'demo-gw7-1'}));
+  report.fixture.homeScore=4;report.fixture.awayScore=2;
+  const ben=text=>({text,senderName:'Ben J',teamId:'qpr'});
+  let r=api.prepareReportPatch(report,{homeScorers:[{playerId:'qpr-alfie',goals:2}],shootoutWinnerId:'net'},ben('NetSix won the penalty shootout.'));
+  assert.deepEqual(r.patch,{shootoutWinnerId:'net'});assert.equal(r.rejected[0].code,'SCORER_NOT_GROUNDED');
+  r=api.prepareReportPatch(report,{homeScorers:[{playerId:'qpr-alfie-h',goals:2}]},ben('Alfie scored two.'));
+  assert.deepEqual(r.patch,{homeScorers:[{playerId:'qpr-alfie',goals:2}]});
+  r=api.prepareReportPatch(report,{homeScorers:[{playerId:'qpr-sam',goals:1}]},ben('Sam scored one.'));
+  assert.deepEqual(r.patch,{});assert.equal(r.rejected[0].code,'SCORER_NOT_GROUNDED');
+  r=api.prepareReportPatch(report,{homeScorers:[{playerId:'qpr-ollie',goals:2}]},ben('Dave scored two.'));
+  assert.deepEqual(r.patch,{});
+  report.fixture.homeScorers=[{playerId:'qpr-alfie',goals:2}];
+  r=api.prepareReportPatch(report,{homeScorers:[{playerId:'qpr-ben-j',goals:1},{playerId:'qpr-sam-k',goals:1}]},ben('Sam K and Ben J got one each.'));
+  assert.deepEqual(r.patch.homeScorers,[{playerId:'qpr-alfie',goals:2},{playerId:'qpr-ben',goals:1},{playerId:'qpr-sam',goals:1}]);
+});
+
+test('mixed stale scorer proposal still saves shootout through real MCP and confirms the actual saved facts',async()=>{
+  setUsage();const session=await startVisitor(),scope=await api.visitorScope(demoRequest('state',session.token));
+  await api.withDemoScope(scope,()=>api.updateFixture('demo-gw7-1',{homeScore:4,awayScore:2},0,'setup','mixed-setup'));
+  let calls=0;
+  await withProvider(()=>++calls===1?providerResult([{type:'function_call',call_id:'mixed-write',name:'update_match_report',arguments:JSON.stringify({fixtureId:'demo-gw7-1',expectedVersion:1,patch:{homeScorers:[{playerId:'qpr-alfie',goals:2}],shootoutWinnerId:'net'}})}]):providerText(),async()=>{
+    const r=await api.httpRoute(demoRequest('message',session.token,chatMessage('mixed-shootout-0001','NetSix won the penalty shootout.')));assert.equal(r.status,200);
+  });
+  const state=await(await visitorGet('demo/state',session.token)).json();
+  assert.equal(state.match.awayPoints,1);assert.match(state.messages.at(-1).text,/NetSix and Chill won the shootout/);assert.doesNotMatch(state.messages.at(-1).text,/can.t match/);
+  assert.deepEqual(privateMatch(await(await visitorGet('bootstrap',session.token)).json()).homeScorers,[]);
 });

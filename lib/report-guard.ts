@@ -11,7 +11,7 @@ function correction(text: string) {
 }
 function namedPlayers(text: string, players: Player[]): Set<string> {
   const names = new Map<string, Set<string>>();
-  for (const player of players) for (const alias of [player.name, ...player.aliases]) {
+  for (const player of players) for (const alias of [player.name, ...player.aliases, player.name.split(' ')[0]]) {
     const key = normalize(alias.trim()); if (!key) continue;
     const ids = names.get(key) ?? new Set<string>(); ids.add(player.id); names.set(key, ids);
   }
@@ -46,7 +46,8 @@ export function guardMatchReport(report: ReportContext, patch: FixturePatch, cur
   const players = [...report.homeSquad, ...report.awaySquad];
   const explicit = namedPlayers(current.text, players);
   const self = players.filter(player => player.teamId === current.teamId && normalize(player.name) === normalize(current.senderName));
-  if (/\bi\s+(?:scored|got|bagged|netted)\b/i.test(current.text) && self.length === 1) explicit.add(self[0].id);
+  const sharedSubject = players.some(player => [player.name, ...player.aliases].some(name => new RegExp(`(?:^|[.!?;])\\s*me\\s+and\\s+${escape(normalize(name))}\\s+(?:both\\s+)?(?:scored|got|bagged|netted)\\b`, 'u').test(normalize(current.text))));
+  if ((/\bi\s+(?:scored|got|bagged|netted)\b/i.test(current.text) || sharedSubject) && self.length === 1) explicit.add(self[0].id);
   // A immediately preceding user fragment can supply the name for “he got two”.
   // Assistant messages are never accepted as identity evidence.
   if (/\b(he|his|they|their|both|each|that|those)\b/i.test(current.text) && !explicit.size) {
@@ -78,4 +79,61 @@ export function guardMatchReport(report: ReportContext, patch: FixturePatch, cur
     }
   }
   return { ok: true };
+}
+
+/** Resolve only exact roster names/aliases and their ID-shaped spelling; never fuzzy-match. */
+export function prepareReportPatch(report: ReportContext, proposed: FixturePatch, current: UserEvidence, previous: UserEvidence[] = []) {
+  const patch: FixturePatch = {}, rejected: {field: string; code: string; message: string}[] = [];
+  const canonicalId = (value: string, squad: Player[]) => {
+    if (squad.some(p => p.id === value)) return value;
+    const key = normalize(value).replace(/[^a-z0-9]+/g, ' ').trim();
+    const candidates = squad.filter(p => [p.name, ...p.aliases, `${p.teamId} ${p.name}`].some(name => normalize(name).replace(/[^a-z0-9]+/g, ' ').trim() === key));
+    return candidates.length === 1 ? candidates[0].id : value;
+  };
+  const accept = (field: string, candidate: FixturePatch) => {
+    const decision = guardMatchReport(report, candidate, current, previous);
+    if (decision.ok) Object.assign(patch, candidate);
+    else rejected.push({field, code: decision.code, message: decision.message});
+  };
+  if ((proposed.homeScore !== undefined && proposed.homeScore !== report.fixture.homeScore) || (proposed.awayScore !== undefined && proposed.awayScore !== report.fixture.awayScore)) {
+    accept('score', {homeScore: proposed.homeScore !== undefined ? proposed.homeScore : report.fixture.homeScore, awayScore: proposed.awayScore !== undefined ? proposed.awayScore : report.fixture.awayScore});
+  }
+  for (const side of ['home', 'away'] as const) {
+    const field = `${side}Scorers` as const, values = proposed[field];
+    if (values === undefined) continue;
+    if (!Array.isArray(values) || values.some(v => !v || typeof v.playerId !== 'string' || !Number.isInteger(v.goals) || v.goals < 1)) {
+      rejected.push({field,code:'INVALID_SCORERS',message:'Please give the goalscorer’s name and how many they scored.'}); continue;
+    }
+    const squad = report[`${side}Squad`], saved = report.fixture[field];
+    const normalized = values.map(v => ({playerId:canonicalId(v.playerId,squad),goals:v.goals}));
+    // Treat partial lists as additions unless the user explicitly corrects/removes a scorer.
+    const merged = new Map((correction(current.text) ? [] : saved).map(v => [v.playerId,v]));
+    for (const scorer of normalized) merged.set(scorer.playerId,scorer);
+    const next = [...merged.values()];
+    if (next.length === saved.length && next.every(v => saved.some(s => s.playerId === v.playerId && s.goals === v.goals))) continue;
+    const unknown = next.find(v => !squad.some(p => p.id === v.playerId));
+    if (unknown) { rejected.push({field,code:'UNKNOWN_PLAYER_ID',message:`Use a player from ${report[`${side}Team`].name}: ${squad.map(p=>p.name).join(', ')}. If the reported name is ambiguous, ask which player.`}); continue; }
+    accept(field,{[field]:next});
+  }
+  if (proposed.shootoutWinnerId !== undefined && proposed.shootoutWinnerId !== report.fixture.shootoutWinnerId) accept('shootoutWinnerId',{shootoutWinnerId:proposed.shootoutWinnerId});
+  return {patch,rejected};
+}
+
+/** A saved-result acknowledgement is factual UI copy, not another inference task. */
+export function savedReportReply(before: ReportContext, after: ReportContext): string {
+  const a=before.fixture,b=after.fixture,home=after.homeTeam.name,away=after.awayTeam.name;
+  const pieces:string[]=[];
+  if(a.homeScore!==b.homeScore||a.awayScore!==b.awayScore)pieces.push(`Saved: ${home} ${b.homeScore}–${b.awayScore} ${away}.`);
+  for(const side of ['home','away'] as const){
+    const changed=b[`${side}Scorers`].filter(s=>!a[`${side}Scorers`].some(old=>old.playerId===s.playerId&&old.goals===s.goals));
+    if(changed.length)pieces.push(`Recorded ${changed.map(s=>`${after[`${side}Squad`].find(p=>p.id===s.playerId)?.name??'player'} (${s.goals})`).join(', ')}.`);
+  }
+  if(a.shootoutWinnerId!==b.shootoutWinnerId)pieces.push(b.shootoutWinnerId?`${b.shootoutWinnerId===b.homeTeamId?home:away} won the shootout — bonus point added.`:'The shootout result has been cleared.');
+  if(!pieces.length)pieces.push('The confirmed details are saved.');
+  if(b.homeScore===null||b.awayScore===null)pieces.push('What was the final match score?');
+  else if(b.homeScorers.reduce((n,s)=>n+s.goals,0)<b.homeScore)pieces.push(`Who scored the remaining goals for ${home}?`);
+  else if(b.awayScorers.reduce((n,s)=>n+s.goals,0)<b.awayScore)pieces.push(`Who scored the remaining goals for ${away}?`);
+  else if(!b.shootoutWinnerId)pieces.push('Who won the penalty shootout?');
+  else pieces.push('All match details are complete.');
+  return pieces.join(' ');
 }

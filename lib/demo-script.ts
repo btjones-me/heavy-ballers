@@ -1,0 +1,2 @@
+// Shared by the visible demo and live API smoke tests.
+export const DEMO_SCRIPT = [{ senderId: 'ben', text: 'We won 4–2.' }, { senderId: 'alfie', text: 'Alfie H scored two for Queens.' }, { senderId: 'sam', text: 'Sam K got one and Ben J got the other for Queens.' }, { senderId: 'leo', text: 'Leo M and Jamie R got one each for NetSix.' }, { senderId: 'ben', text: 'NetSix won the penalty shootout.' }];
