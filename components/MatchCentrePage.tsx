@@ -10,8 +10,13 @@ export default function MatchCentrePage() {
     const framed = window.parent !== window;
     setEmbedded(framed);
     if (!framed) {
-      setSession({ token: sessionStorage.getItem('heavy-ballers-demo-token') || '', channel: '' });
-      return;
+      const syncSession = () => {
+        const token = sessionStorage.getItem('heavy-ballers-demo-token') || '';
+        setSession(current => current?.token === token ? current : { token, channel: '' });
+      };
+      syncSession();
+      window.addEventListener('hb:data-changed', syncSession);
+      return () => window.removeEventListener('hb:data-changed', syncSession);
     }
     const receive = (event: MessageEvent) => {
       if (!acceptsFrameMessage(event, window.location.origin, window.parent)) return;

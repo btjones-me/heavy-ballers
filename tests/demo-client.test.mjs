@@ -108,3 +108,32 @@ test('iframe bridge rejects other origins and sibling windows before trusting re
   assert.equal(accept({ ...event, source: null }, origin, null), false);
   assert.equal(accept({ ...event, data: null }, origin, peer), false);
 });
+
+test('minimised and background demos do not wait on invisible animation frames', () => {
+  const gate = context.exports.canReleasePresentation;
+  const view = {open:true,pageVisible:true,side:'chat',watchReady:false,presentationReady:'',runId:'current'};
+  assert.equal(gate(view),false);
+  assert.equal(gate({...view,open:false}),true);
+  assert.equal(gate({...view,pageVisible:false}),true);
+  assert.equal(gate({...view,side:'trace',watchReady:true,presentationReady:'current'}),true);
+  assert.equal(gate({...view,side:'trace',watchReady:true,presentationReady:'old'}),false);
+});
+
+test('window drag keeps its title bar within the viewport', () => {
+  const clamp = context.exports.clampWindow;
+  const left=clamp({x:-50,y:-20},440,1200,800);
+  assert.equal(left.x,8);assert.equal(left.y,8);
+  const right=clamp({x:1600,y:1000},1000,1200,800);
+  assert.equal(right.x,192);assert.equal(right.y,700);
+});
+
+test('persistent site shell handles its page routes without hijacking API, assets or external URLs', () => {
+  const shell = readFileSync(new URL('../components/SiteShell.tsx', import.meta.url), 'utf8');
+  const output = ts.transpileModule(shell, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React } }).outputText;
+  const ctx = {exports:{},require:()=>({})};vm.runInNewContext(output,ctx);
+  for (const path of ['/','/teams/tuesday','/teams/saturday','/tables/tuesday','/tables/saturday','/scores-and-fixtures','/privacy-policy','/match-centre','/admin']) assert.equal(ctx.exports.isPublicPage(path),true,path);
+  assert.equal(ctx.exports.normalizePagePath('/match-centre/'),'/match-centre');
+  assert.equal(ctx.exports.normalizePagePath('/admin/'),'/admin');
+  assert.equal(ctx.exports.normalizePagePath('/'),'/');
+  for (const path of ['/api/bootstrap','/assets/photo.png','https://example.com/','/missing']) assert.equal(ctx.exports.isPublicPage(path),false,path);
+});
