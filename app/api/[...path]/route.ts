@@ -14,7 +14,7 @@ async function route(request:Request){
   await ensureSeed();
   const path=new URL(request.url).pathname.slice(5),post=request.method==='POST';
   if(Number(request.headers.get('content-length')??0)>6_000_000)throw new AppError('This upload is too large.',413);
-  if(path==='bootstrap'&&!post){const scope=await visitorScope(request);return json(scope?await withDemoScope(scope,()=>getBootstrap()):overlayDemo(await getBootstrap(),freshDemo()));}
+  if(path==='bootstrap'&&!post){const scope=await visitorScope(request);if(request.headers.get('x-demo-token')&&!scope)throw new AppError('Your demo has expired. Reset the demo to reconnect.',401,'DEMO_EXPIRED');return json(scope?await withDemoScope(scope,()=>getBootstrap()):overlayDemo(await getBootstrap(),freshDemo()));}
   if(path==='contact'&&post){assertSameOrigin(request);return json(await submitEnquiry(await request.json(),request.headers.get('cf-connecting-ip')??'local'))}
   if(path==='demo/state'&&!post)return json(await visitorScope(request)?await runVisitorDemo(request,demoState,'read'):{messages:[],events:[],active:false,owner:false,busy:false,configured:!!runtimeEnv().OPENAI_API_KEY});
   if(path==='demo/start'&&post)return json(await runVisitorDemo(request,startDemo,'start'));

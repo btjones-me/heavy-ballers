@@ -95,3 +95,16 @@ test('failed single-flight poll releases its slot for recovery', async () => {
   const refresh = createDemoRefresh(() => 'owner', async () => { if (++calls === 1) throw new Error('offline'); return { ok: true }; }, () => current, value => { current = value; });
   await assert.rejects(refresh(), /offline/); await refresh(); assert.equal(current.ok, true);
 });
+
+test('iframe bridge rejects other origins and sibling windows before trusting readiness', () => {
+  const bridge = readFileSync(new URL('../lib/match-frame.ts', import.meta.url), 'utf8');
+  const compiledBridge = ts.transpileModule(bridge, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  const ctx = { exports: {} }; vm.runInNewContext(compiledBridge, ctx);
+  const accept = ctx.exports.acceptsFrameMessage, peer = {}, origin = 'https://ballers.test';
+  const event = { origin, source: peer, data: { type: 'hb:match-ready' } };
+  assert.equal(accept(event, origin, peer), true);
+  assert.equal(accept({ ...event, origin: 'https://other.test' }, origin, peer), false);
+  assert.equal(accept({ ...event, source: {} }, origin, peer), false);
+  assert.equal(accept({ ...event, source: null }, origin, null), false);
+  assert.equal(accept({ ...event, data: null }, origin, peer), false);
+});

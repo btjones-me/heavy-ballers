@@ -531,3 +531,12 @@ test('mixed stale scorer proposal still saves shootout through real MCP and conf
   assert.equal(state.match.awayPoints,1);assert.match(state.messages.at(-1).text,/NetSix and Chill won the shootout/);assert.doesNotMatch(state.messages.at(-1).text,/can.t match/);
   assert.deepEqual(privateMatch(await(await visitorGet('bootstrap',session.token)).json()).homeScorers,[]);
 });
+
+test('expired iframe session returns an explicit error instead of an untouched anonymous season', async () => {
+  const response = await api.httpRoute(new Request('https://ballers.test/api/bootstrap', { headers: { 'x-demo-token': 'expired-session' } }));
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).code, 'DEMO_EXPIRED');
+  const baseline = await api.httpRoute(new Request('https://ballers.test/api/bootstrap'));
+  assert.equal(baseline.status, 200);
+  assert.equal((await baseline.json()).fixtures.find(f => f.id === 'demo-gw7-1').homeScore, null);
+});

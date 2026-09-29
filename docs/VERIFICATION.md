@@ -100,3 +100,19 @@ Local ignored `qa/` artifacts retain the public screenshot and concise result/ad
 - Evidence: ignored `qa/live-smoke-report.json` and `qa/live-smoke-budget.json`. Run `npm run test:live` explicitly; it builds and runs the live suite, returning nonzero on any assertion failure. The HTTP presentation client tests the readiness handshake; this is not a browser pixel/animation test.
 
 - Final review narrowed first-person subject matching. Deterministic regressions accept “Me and Jamie scored” but reject treating “Sam told me Alfie scored” as evidence that the sender scored.
+
+## 30 September 2026 — real match-centre iframe
+
+The demonstration now embeds `/match-centre?embed=1`, explicitly labelled “Live website · iframe”. The same match centre is available as a full page. A same-origin/window-checked postMessage handshake passes the private session credential in memory (never in a URL), then waits for the corresponding API snapshot to paint before acknowledging the pending write. Token rotation remounts the view and fences old requests. Expired credentials return 401 rather than silently displaying the anonymous seed.
+
+Validation: 42 deterministic tests and TypeScript checks pass. Browser checks against the local application and real HTTP MCP/D1 path verified:
+- Saved 4–2 score appeared in the iframe and Queens moved from 14 to 17 points.
+- Fragmented scorer details and NetSix shootout win appeared; NetSix moved from 7 to 8 points.
+- 26 changed values had the gold-highlight class immediately after the write.
+- A separate browser tab remained on the untouched anonymous baseline.
+- Iframe reload and same-tab full match-centre navigation retained the private saved match.
+- Reset returned the iframe to the untouched fixture; expiring only the local test session produced a visible reconnect/error state and reset recovered it.
+- A test presentation gate in the local session was acknowledged by the actual rendered iframe, before a subsequent MCP write.
+- Mobile viewport checked at 390×844; iframe scrolls independently, with access to all table columns.
+
+No paid AI calls were needed for these presentation checks. The prior live model smoke suite remains separate; these checks exercise the browser presentation layer that API-only tests do not cover. Screenshot: `qa/iframe-match-centre-desktop.png`.
