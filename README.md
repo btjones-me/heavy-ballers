@@ -4,11 +4,16 @@ A recreation of the public Kensington Heavy Ballers website, with Tuesday/Saturd
 
 **Source:** `/Users/benjaminjones/repos/heavy-ballers`
 
+**Public demo:** https://heavy-ballers-demo.btjones-me.chatgpt.site
+
+**Admin:** https://heavy-ballers-demo.btjones-me.chatgpt.site/admin — initial password `heavyballers`.
+
 **Stack:** React/TypeScript, Next.js App Router conventions via Vinext, Cloudflare Worker/D1/R2, Sites hosting.
 
 - [Admin operating guide](docs/ADMIN.md)
 - [Architecture, storage, scoring and spend controls](docs/ARCHITECTURE.md)
 - [MCP connection and future WhatsApp adapter](docs/MCP.md)
+- [Verification record](docs/VERIFICATION.md)
 
 ## Run locally
 

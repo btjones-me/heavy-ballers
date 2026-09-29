@@ -52,12 +52,15 @@ That observation verifies a real shared-data update, rather than only an animati
 - Public visitors do not have accounts. Administration uses the requested shared password and server-side session protection; this is the agreed initial access model.
 - Contact enquiries are stored for administrator review. There is no outbound mail integration.
 
-## Final deployment and acceptance follow-up
+## Public deployment acceptance
 
-Pending main-agent completion:
+Published at https://heavy-ballers-demo.btjones-me.chatgpt.site on 29 September 2026. The production Worker build and native Sites deployment succeeded.
 
-1. Record final ambiguity/correction, duplicate-message, conflict, budget-limit and API-failure test outcomes, including the clarification rerun.
-2. Record the final automated test/build results.
-3. Record the separate public URL and verify the deployed homepage, admin login, persistence, image upload and MCP authentication.
-4. Demonstrate a deployed LLM → MCP update and verify it from an independent public page.
-5. Restore the intended initial demo state after acceptance tests, without altering historical archive data.
+- Played the complete five-message demonstration in the public phone drawer. The real model called the HTTP MCP service and saved score 4–2, Queens scorers Alfie (2), Sam (1), Ben (1), NetSix scorers Leo (1), Jamie (1), and NetSix's shootout win.
+- An independent Chrome browser saw automatic standings changes: Queens 14 → 17 points and NetSix 7 → 8, both on seven played. Reload retained the result. Final match readback confirmed league points 3/1.
+- Public admin content editing persisted on readback and was restored. A contact enquiry was stored, and an authenticated R2 image upload downloaded with identical bytes. No email was sent.
+- Unauthenticated admin state/export and `/api/mcp` requests returned 401. An authenticated HTTP MCP report read succeeded. Sites manages OAuth on `/mcp`; standalone adapters and the backend agent use the credential-protected `/api/mcp` alias.
+- All 24 automated tests passed, including report grounding, duplicate messages, stale conflicts, budget bounds, failed calls, authentication and demo ownership/poll races. TypeScript and application lint checks passed without errors.
+- After public acceptance, the admin reset restored round seven to unreported, emptied the fictional conversation and released its lease. Historical fixture records were compared before/after and were unchanged. The AI ledger was retained: September spend 21,130 micro-GBP (£0.02113), with no outstanding reservations at that point.
+
+Local ignored `qa/` artifacts retain the public screenshot and concise result/admin/reset evidence. The public demo is ready to replay; later visitors may change its shared state.
