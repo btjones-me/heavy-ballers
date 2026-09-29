@@ -79,8 +79,9 @@ export default function DemoPhone() {
   const trigger = useRef<HTMLButtonElement>(null);
   const publishState = useCallback((next: DemoState) => { stateRef.current = next; setState(next); sessionStorage.setItem(PROGRESS_KEY, String(progressFrom(next.messages))); const pending = sessionStorage.getItem(PENDING_KEY); setPendingIndex(pending === null ? null : Number(pending)); }, []);
   const refresh = useCallback(() => refreshWithCurrentToken(token, async requestToken => normalize(await demoRequest('/api/demo/state', undefined, requestToken)), () => stateRef.current, publishState), [publishState]);
-  const show = useCallback(() => { setLoading(true); setOpen(true); }, []);
+  const show = useCallback(() => { window.dispatchEvent(new CustomEvent('hb-drawer-open', { detail: 'demo' })); setLoading(true); setOpen(true); }, []);
   useEffect(() => { window.addEventListener('open-demo', show); return () => window.removeEventListener('open-demo', show); }, [show]);
+  useEffect(() => { const otherDrawer = (event: Event) => { if ((event as CustomEvent).detail === 'architecture') { playingRef.current = false; setPlaying(false); setOpen(false); } }; window.addEventListener('hb-drawer-open', otherDrawer); return () => window.removeEventListener('hb-drawer-open', otherDrawer); }, []);
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
