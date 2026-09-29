@@ -188,7 +188,7 @@ async function withProvider(handler, task, onRpc = () => {}) {
   const original = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     const target = new URL(url);
-    if (target.origin === 'https://ballers.test' && target.pathname === '/mcp') { onRpc(JSON.parse(options.body)); return api.handleMcp(new Request(url, options)); }
+    if (target.origin === 'https://ballers.test' && target.pathname === '/api/mcp') { onRpc(JSON.parse(options.body)); return api.handleMcp(new Request(url, options)); }
     assert.equal(target.href, 'https://api.openai.com/v1/responses');
     return handler(JSON.parse(options.body));
   };
@@ -346,4 +346,23 @@ test('model repairs a player ID used as shootout winner before any write is disp
   const state = await api.demoState(new Request('https://ballers.test/api/demo/state'));
   assert.equal(state.match.shootoutWinnerName, 'NetSix and Chill');
   assert.equal(state.match.homePoints, 3); assert.equal(state.match.awayPoints, 1);
+});
+
+test('Sites identity is accepted only on reserved MCP route; service alias always requires its own token', async () => {
+  const request = (path, headers, params) => new Request(`https://ballers.test${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params }) });
+  const identity = { 'oai-authenticated-user-id': 'site-scoped-test-user' };
+  const read = { name: 'get_squad', arguments: { teamId: 'net' } };
+  assert.equal((await api.handleMcp(request('/api/mcp', identity, read))).status, 401);
+  assert.equal((await api.handleMcp(request('/api/mcp', { ...identity, authorization: 'Bearer wrong-token' }, read))).status, 401);
+  const authenticatedRead = await (await api.handleMcp(request('/mcp', identity, read))).json();
+  assert.equal(authenticatedRead.result.isError, false); assert.equal(authenticatedRead.result.structuredContent.team.id, 'net');
+  const serviceRead = await (await api.handleMcp(request('/api/mcp', { authorization: 'Bearer test-only-mcp-token' }, read))).json();
+  assert.equal(serviceRead.result.isError, false);
+  const write = { name: 'update_match_report', arguments: { fixtureId: 'demo-gw7-2', expectedVersion: 0, operationId: 'platform:test:write', patch: { homeScore: 1, awayScore: 1 } } };
+  const updated = await (await api.handleMcp(request('/mcp', identity, write))).json();
+  assert.equal(updated.result.isError, false); assert.equal(updated.result.structuredContent.fixture.homeScore, 1);
+  const archive = (await api.getBootstrap()).fixtures.find(fixture => fixture.seasonId !== 'tuesday-demo-s2');
+  write.arguments.fixtureId = archive.id; write.arguments.operationId = 'platform:test:archive';
+  const refused = await (await api.handleMcp(request('/mcp', identity, write))).json();
+  assert.equal(refused.result.isError, true);
 });

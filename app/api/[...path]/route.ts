@@ -4,10 +4,12 @@ import {adminState,saveRecord,undoChange,resetDemo,submitEnquiry} from '../../..
 import {login,logout,requireAdmin,assertSameOrigin} from '../../../lib/auth';
 import {demoState,startDemo,receiveMessage,releaseDemo} from '../../../lib/agent';
 import {AppError} from '../../../lib/types';
+import {handleMcp} from '../../../lib/mcp';
 
 const json=(value:unknown)=>Response.json(value,{headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 async function route(request:Request){
  try{
+  if(new URL(request.url).pathname==='/api/mcp')return await handleMcp(request);
   await ensureSeed();
   const path=new URL(request.url).pathname.slice(5),post=request.method==='POST';
   if(Number(request.headers.get('content-length')??0)>6_000_000)throw new AppError('This upload is too large.',413);

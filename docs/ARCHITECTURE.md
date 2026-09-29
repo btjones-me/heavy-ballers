@@ -10,7 +10,7 @@ The fictional Tuesday Season 2 has four teams, 12 rounds and six completed round
 
 ## Agent and transport
 
-Browser → `/api/demo/message` → OpenAI Responses API → function tool selection → HTTP MCP `/mcp` → shared result service → D1. Before writes, deterministic checks require reported score evidence, explicit confirmation of score corrections, and unique named/aliased players. Ungrounded guesses trigger clarification. Tool schemas are discovered from the MCP server; tool calls actually cross its HTTP endpoint. The browser never receives the OpenAI key or MCP credential. Agent messages and tool activity are persisted. Public data refreshes every 2.5 seconds, including in other visitors' browsers.
+Browser → `/api/demo/message` → OpenAI Responses API → function tool selection → HTTP MCP `/api/mcp` → shared result service → D1. Before writes, deterministic checks require reported score evidence, explicit confirmation of score corrections, and unique named/aliased players. Ungrounded guesses trigger clarification. Tool schemas are discovered from the MCP server; tool calls actually cross its HTTP endpoint. The browser never receives the OpenAI key or MCP credential. Agent messages and tool activity are persisted. Public data refreshes every 2.5 seconds, including in other visitors' browsers.
 
 `ChatEvent` in `lib/agent.ts` is the adapter boundary: conversationId, messageId, senderId, fixtureId, text and timestamp. A future WhatsApp adapter should authenticate webhook signatures, resolve senders to verified team identities, map conversations to fixtures, then feed these events into a hosted orchestration service using the same MCP tools. The current public demo maps four invented sender identities to the single demonstration fixture. It cannot write historical results.
 
@@ -26,10 +26,10 @@ This limit covers this application's dedicated credential usage through this age
 
 Admin login checks the server-held password, throttles attempts and issues a hashed, HttpOnly, SameSite=Strict session cookie, Secure on HTTPS, expiring after 12 hours. Mutating browser endpoints require the same origin. Contact enquiries are stored for admin viewing and are not emailed. File uploads require admin, accept PNG/JPEG/WebP signatures only and have a 5 MB limit. Public assets are served with content-type protection. Secrets live in ignored local environment files and Sites secret storage, never the source manifest.
 
-`APP_ORIGIN` is the fixed, server-held MCP origin, preventing a user-supplied Host header from choosing where the MCP credential is sent. The dedicated MCP token is separate from the admin password and does not grant admin access.
+`APP_ORIGIN` is the fixed, server-held MCP origin, preventing a user-supplied Host header from choosing where the MCP credential is sent. The dedicated MCP token is separate from the admin password and does not grant admin access. Sites reserves `/mcp` for its managed OAuth plugin connection; the backend calls the same protocol handler at `/api/mcp` using the separate token. Trusted platform identity is accepted only at `/mcp`, never as authorization for the service alias.
 
 ## Local development
 
-Install with `npm run install:ci`; configure `.dev.vars` using `.env.example` and keep it ignored. Run `npm run dev -- --host 127.0.0.1 --port 3000`, and set `APP_ORIGIN=http://127.0.0.1:3000`. Run `npm run db:local` to apply generated Drizzle migrations to the local D1 binding before using the app. Run `node --test tests/backend.test.mjs` and `npx tsc --noEmit`.
+Install with `npm run install:ci`; configure `.dev.vars` using `.env.example` and keep it ignored. Run `npm run dev -- --host 127.0.0.1 --port 3000`, and set `APP_ORIGIN=http://127.0.0.1:3000`. Run `npm run db:local` to apply generated Drizzle migrations to the local D1 binding before using the app. Run `npm test` and `npx tsc --noEmit`.
 
 Sites deployment uses `.openai/hosting.json`, a pushed source commit and the corresponding Worker archive. D1 migrations are packaged with deployment. Environment changes require redeployment. The original kensingtonheavyballers.co.uk site is not changed by this project.

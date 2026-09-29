@@ -39,7 +39,7 @@ export async function startDemo(request:Request){
 export async function releaseDemo(request:Request){assertSameOrigin(request);await run("DELETE FROM kv WHERE key='demo:lock' AND json_extract(value,'$.token')=?",await sha256(token(request)));return {ok:true}}
 
 async function rpc<T=unknown>(origin:string,method:string,params:unknown,notification=false):Promise<T>{
- const response=await fetch(new URL('/mcp',origin),{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+runtimeEnv().MCP_TOKEN,'MCP-Protocol-Version':'2025-03-26'},body:JSON.stringify({jsonrpc:'2.0',...(notification?{}:{id:newId()}),method,params}),signal:AbortSignal.timeout(15_000)});
+ const response=await fetch(new URL('/api/mcp',origin),{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+runtimeEnv().MCP_TOKEN,'MCP-Protocol-Version':'2025-03-26'},body:JSON.stringify({jsonrpc:'2.0',...(notification?{}:{id:newId()}),method,params}),signal:AbortSignal.timeout(15_000)});
  if(!response.ok)throw new AppError('The match-report connection is temporarily unavailable.',503,'MCP_UNAVAILABLE');
  if(response.status===202)return undefined as T;
  const body=await response.json() as {result:T;error?:{message:string}};

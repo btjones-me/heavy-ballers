@@ -52,3 +52,5 @@ next-env.d.ts
 .sites-runtime/
 .vinext/
 qa/
+
+*.tsbuildinfo

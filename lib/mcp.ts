@@ -50,13 +50,19 @@ type RpcId = string | number | null;
 function rpc(id: RpcId, result: unknown, status = 200) { return Response.json({ jsonrpc: '2.0', id, result }, { status, headers: { 'Cache-Control': 'no-store' } }); }
 function rpcError(id: RpcId, code: number, message: string, status = 200) { return Response.json({ jsonrpc: '2.0', id, error: { code, message } }, { status, headers: { 'Cache-Control': 'no-store' } }); }
 export async function handleMcp(request: Request): Promise<Response> {
-  const configured = runtimeEnv().MCP_TOKEN;
-  if (!configured) return rpcError(null, -32000, 'MCP service is not configured.', 503);
-  const supplied = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
-  if (!supplied || supplied.length > 1000) return new Response('Bearer authorization required.', { status: 401, headers: { 'WWW-Authenticate': 'Bearer', 'Cache-Control': 'no-store' } });
-  const [actual, expected] = await Promise.all([sha256(supplied), sha256(configured)]);
-  let difference = 0; for (let index = 0; index < actual.length; index++) difference |= actual.charCodeAt(index) ^ expected.charCodeAt(index);
-  if (difference) return new Response('Invalid MCP credential.', { status: 401, headers: { 'WWW-Authenticate': 'Bearer', 'Cache-Control': 'no-store' } });
+  // Sites authenticates its reserved /mcp route and supplies this trusted header.
+  // The service alias must always verify our separate credential; identity
+  // headers on that ordinary API route are never treated as authentication.
+  const platformAuthenticated = new URL(request.url).pathname === '/mcp' && Boolean(request.headers.get('oai-authenticated-user-id')?.trim());
+  if (!platformAuthenticated) {
+    const configured = runtimeEnv().MCP_TOKEN;
+    if (!configured) return rpcError(null, -32000, 'MCP service is not configured.', 503);
+    const supplied = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
+    if (!supplied || supplied.length > 1000) return new Response('Bearer authorization required.', { status: 401, headers: { 'WWW-Authenticate': 'Bearer', 'Cache-Control': 'no-store' } });
+    const [actual, expected] = await Promise.all([sha256(supplied), sha256(configured)]);
+    let difference = 0; for (let index = 0; index < actual.length; index++) difference |= actual.charCodeAt(index) ^ expected.charCodeAt(index);
+    if (difference) return new Response('Invalid MCP credential.', { status: 401, headers: { 'WWW-Authenticate': 'Bearer', 'Cache-Control': 'no-store' } });
+  }
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin) return rpcError(null, -32000, 'Invalid origin.', 403);
   if (request.method !== 'POST') return new Response(null, { status: 405, headers: { Allow: 'POST', 'Cache-Control': 'no-store' } });

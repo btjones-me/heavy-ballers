@@ -18,12 +18,24 @@ const SCRIPT = [{ senderId: 'ben', text: 'We won 4–2.' }, { senderId: 'alfie',
 const normalizedText = (value: string) => value.replace(/[–—−]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 const progressFrom = (messages: Message[]) => { let count = 0; for (const step of SCRIPT) { if (messages.some(m => normalizedText(m.text) === normalizedText(step.text))) count++; else break; } return count; };
 function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
-async function demoRequest(path: string, body?: unknown) {
-  const response = await fetch(path, { credentials: 'same-origin', headers: { 'x-demo-token': token(), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}) });
+async function demoRequest(path: string, body?: unknown, requestToken = token()) {
+  const response = await fetch(path, { cache: 'no-store', credentials: 'same-origin', headers: { 'x-demo-token': requestToken, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}) });
   const data = await response.json() as Record<string, unknown>;
   if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : (data.error as { message?: string })?.message || String(data.message || `The demo could not complete this request (${response.status}).`));
   return data;
 }
+
+// A poll started before control was acquired must not overwrite the new owner.
+export async function refreshWithCurrentToken<T>(getToken: () => string, fetchState: (requestToken: string) => Promise<T>, getCurrent: () => T, publish: (value: T) => void): Promise<T> {
+  const requestToken = getToken();
+  let next: T;
+  try { next = await fetchState(requestToken); }
+  catch (error) { if (requestToken !== getToken()) return getCurrent(); throw error; }
+  if (requestToken !== getToken()) return getCurrent();
+  publish(next);
+  return next;
+}
+
 function normalize(raw: Record<string, unknown>): DemoState { const state = (raw.state || raw) as Partial<DemoState>; return { ...EMPTY, ...state, messages: state.messages || [], events: [...(state.events || [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt)) }; }
 function senderInfo(sender: string) { return senders.find(s => s.id === sender || s.label.toLowerCase() === sender.toLowerCase()); }
 function isAgent(message: Message) { return ['assistant', 'agent', 'system'].includes(message.role) || /reporter|agent|ballers bot|match bot/i.test(message.sender); }
@@ -46,7 +58,7 @@ export default function DemoPhone() {
   const history = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const publishState = useCallback((next: DemoState) => { stateRef.current = next; setState(next); sessionStorage.setItem(PROGRESS_KEY, String(progressFrom(next.messages))); const pending = sessionStorage.getItem(PENDING_KEY); setPendingIndex(pending === null ? null : Number(pending)); }, []);
-  const refresh = useCallback(async () => { const next = normalize(await demoRequest('/api/demo/state')); publishState(next); return next; }, [publishState]);
+  const refresh = useCallback(() => refreshWithCurrentToken(token, async requestToken => normalize(await demoRequest('/api/demo/state', undefined, requestToken)), () => stateRef.current, publishState), [publishState]);
   const show = useCallback(() => { setLoading(true); setOpen(true); }, []);
   useEffect(() => { window.addEventListener('open-demo', show); return () => window.removeEventListener('open-demo', show); }, [show]);
   useEffect(() => {
@@ -78,7 +90,7 @@ export default function DemoPhone() {
     if (current.active && !current.owner) throw new Error('Someone else is demonstrating the chat. You can watch their conversation live.');
     if (current.active && current.owner) return current;
     const result = await demoRequest('/api/demo/start', {});
-    if (typeof result.token === 'string') sessionStorage.setItem(TOKEN_KEY, result.token);
+    if (typeof result.token === 'string') { sessionStorage.setItem(TOKEN_KEY, result.token); publishState(normalize(result)); }
     const next = await refresh();
     if (!next.messages.some(m => m.role === 'user')) { sessionStorage.removeItem(STEP_ID_KEY); sessionStorage.removeItem(PENDING_KEY); setPendingIndex(null); }
     return next;

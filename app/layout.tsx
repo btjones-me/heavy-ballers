@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Kensington Heavy Ballers | 6-a-side football",
-  description: "Football, friendship and a healthier you. Tuesday and Saturday football leagues in Kensington, Liverpool.",
+  description: "Football, friendship and a healthier you. Tuesday and Saturday football leagues in Kensington, London.",
   other: {
     "codex-preview": "development",
   },

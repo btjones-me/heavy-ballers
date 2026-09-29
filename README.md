@@ -20,7 +20,7 @@ Use Node 22.13 or newer. Run `npm run install:ci`, configure ignored `.dev.vars`
 
 ```sh
 npx tsc --noEmit
-node --test tests/backend.test.mjs
+npm test
 npm run build
 ```
 

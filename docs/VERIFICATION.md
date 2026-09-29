@@ -38,7 +38,7 @@ That observation verifies a real shared-data update, rather than only an animati
 
 - `npx tsc --noEmit --pretty false` passed after frontend integration and after the keyboard/heading changes.
 - `npx eslint components/PublicSite.tsx` completed with no errors. It reports native-image optimisation warnings; original local image assets intentionally use native image elements.
-- All 19 backend, MCP, agent, grounding, concurrency, authentication and budget tests passed. Full project TypeScript and application ESLint checks passed.
+- All 24 backend, browser-polling, MCP, agent, grounding, concurrency, authentication and budget tests passed. Full project TypeScript and application ESLint checks passed.
 - An initial production Worker build passed. The release workflow rebuilds the final source state before publication.
 
 ## Data limitations and deliberate boundaries
