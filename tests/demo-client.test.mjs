@@ -7,9 +7,9 @@ import ts from 'typescript';
 // Load the actual refresh helper without mounting a browser or calling an API.
 const source = readFileSync(new URL('../components/DemoPhone.tsx', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React } }).outputText;
-const context = { exports: {}, require: () => ({}), console };
+const context = { exports: {}, require: () => ({}), console, AbortSignal };
 vm.runInNewContext(compiled, context);
-const { refreshWithCurrentToken, demoRequest } = context.exports;
+const { refreshWithCurrentToken, demoRequest, createDemoRefresh } = context.exports;
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 
 test('late anonymous poll cannot turn a newly acquired owner into a spectator', async () => {
@@ -68,4 +68,30 @@ test('demo rejects malformed success responses and still returns valid responses
   await assert.rejects(demoRequest('/api/demo/state', undefined, 'test-token'), /unreadable response.*out of date/);
   context.fetch = async () => Response.json({messages: []});
   assert.deepEqual(await demoRequest('/api/demo/state', undefined, 'test-token'), {messages: []});
+});
+
+
+test('overlapping polls share a request so an old snapshot cannot cancel the next presentation', async () => {
+  let current = { presentation: null }; const first = deferred(), second = deferred(); let calls = 0;
+  const refresh = createDemoRefresh(() => 'owner', () => (++calls === 1 ? first.promise : second.promise), () => current, value => { current = value; });
+  const a = refresh(), b = refresh();
+  assert.equal(a, b); assert.equal(calls, 1);
+  first.resolve({ presentation: null }); await a;
+  const next = refresh(); assert.equal(calls, 2);
+  second.resolve({ presentation: { runId: 'second-write' } }); await next;
+  assert.equal(current.presentation.runId, 'second-write');
+});
+
+test('a new owner can refresh immediately while an old anonymous poll is still pending', async () => {
+  let owner = '', current = { owner: false }; const stale = deferred();
+  const refresh = createDemoRefresh(() => owner, token => token ? Promise.resolve({ owner: true }) : stale.promise, () => current, value => { current = value; });
+  const anonymous = refresh(); owner = 'owner-token'; await refresh();
+  stale.resolve({ owner: false }); await anonymous;
+  assert.equal(current.owner, true);
+});
+
+test('failed single-flight poll releases its slot for recovery', async () => {
+  let calls = 0, current = {};
+  const refresh = createDemoRefresh(() => 'owner', async () => { if (++calls === 1) throw new Error('offline'); return { ok: true }; }, () => current, value => { current = value; });
+  await assert.rejects(refresh(), /offline/); await refresh(); assert.equal(current.ok, true);
 });

@@ -70,3 +70,13 @@ Local ignored `qa/` artifacts retain the public screenshot and concise result/ad
 - All 32 automated tests pass. New cases prove that the MCP write is withheld until the current owner acknowledges the painted live view, stale and non-owner acknowledgements fail, an unacknowledged view times out without changing the result, and developer traces preserve HTTP status, JSON-RPC error codes and measured durations without credentials.
 - A real local browser run displayed the automatic chat-to-activity flip, the live result view and gold change highlights. Score, both teams' fragmented scorer reports and the shootout saved correctly, ending at Queens 4–2 NetSix, with three and one league points respectively. MCP traces displayed real HTTP 200 results and a 202 notification acknowledgement, with measured millisecond timings.
 - Local Chrome navigation checks clicked Tuesday/Saturday Teams, Tuesday/Saturday Tables and Scores & fixtures. Each changed the URL and rendered the correct content. Outside click, mutually exclusive dropdowns and Escape dismissal passed. Mobile Tables → Saturday at 390×844 navigated correctly and closed the menu. Public links use native navigation to avoid the observed Vinext client-router interception issue.
+
+
+## Presentation handover repair — 29 September 2026
+
+- Serialized demo polling per owner to prevent delayed snapshots from cancelling the next write's flip/readiness timers; state and acknowledgement requests now have bounded timeouts.
+- Repeated open events preserve the live baseline and cannot leave the drawer in a permanent loading state. Closing still clears readiness, and reopening waits for a newly painted baseline.
+- Visibility changes recheck the pending acknowledgement and pause autoplay when the tab is hidden. The presentation gate allows 30 seconds; writes still require owner acknowledgement.
+- Mobile handovers scroll the live result into view. Delayed between-message transitions cannot override a newer gate.
+- All 35 automated tests and TypeScript checking pass, including slow overlapping refreshes, owner changes and polling recovery.
+- Actual GPT-6 Luna mobile run saved all five scripted facts through HTTP MCP: 4–2, both teams' cumulative scorers, then NetSix's shootout point. Closing/reopening and submitting a correction also saved successfully. Public season data was not reset for these checks.

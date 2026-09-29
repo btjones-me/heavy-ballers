@@ -35,7 +35,7 @@ export async function acknowledgePresentation(request:Request){
  if(!accepted.meta.changes)throw new AppError('This update is no longer waiting for the live view.',409,'PRESENTATION_EXPIRED');
  return {ok:true,runId:body.runId};
 }
-export async function preparePresentation(args:unknown,owner:string,timeoutMs=18_000){
+export async function preparePresentation(args:unknown,owner:string,timeoutMs=30_000){
  const runId=newId(),expiresAt=Date.now()+timeoutMs;
  await append('Heavy Ballers','I’ve got those details. I’m updating the website now — watch the result and league table.');
  await run("INSERT INTO kv(key,value) VALUES('demo:presentation',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",JSON.stringify({runId,expiresAt,owner,ready:0}));

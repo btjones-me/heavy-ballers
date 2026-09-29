@@ -23,7 +23,7 @@ export async function demoRequest(path: string, body?: unknown, requestToken = t
   const recovery = body !== undefined ? 'Some details may already be saved. Check the conversation and saved result before trying again.' : 'The displayed conversation may be out of date. Reopen the drawer to reconnect.';
   let response: Response;
   try {
-    response = await fetch(path, { cache: 'no-store', credentials: 'same-origin', headers: { 'x-demo-token': requestToken, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}) });
+    response = await fetch(path, { cache: 'no-store', credentials: 'same-origin', signal: AbortSignal.timeout(path.endsWith('/state') || path.endsWith('/present') ? 8000 : 180000), headers: { 'x-demo-token': requestToken, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}) });
   } catch {
     throw new Error(`Could not ${action}: the connection to the website was interrupted. Check your internet connection. ${recovery}`);
   }
@@ -56,6 +56,21 @@ export async function refreshWithCurrentToken<T>(getToken: () => string, fetchSt
   return next;
 }
 
+// Share in-flight polls for the same owner: a slow pre-gate snapshot must never
+// arrive after a newer snapshot and cancel that update's animation.
+export function createDemoRefresh<T>(getToken: () => string, fetchState: (requestToken: string) => Promise<T>, getCurrent: () => T, publish: (value: T) => void) {
+  let pending: { token: string; promise: Promise<T> } | undefined;
+  return () => {
+    const requestToken = getToken();
+    if (pending?.token === requestToken) return pending.promise;
+    const promise = refreshWithCurrentToken(getToken, fetchState, getCurrent, publish);
+    const entry = { token: requestToken, promise };
+    pending = entry;
+    void promise.finally(() => { if (pending === entry) pending = undefined; }).catch(() => {});
+    return promise;
+  };
+}
+
 function normalize(raw: Record<string, unknown>): DemoState { const state = (raw.state || raw) as Partial<DemoState>; return { ...EMPTY, ...state, messages: state.messages || [], events: [...(state.events || [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt)) }; }
 function senderInfo(sender: string) { return senders.find(s => s.id === sender || s.label.toLowerCase() === sender.toLowerCase()); }
 function isAgent(message: Message) { return ['assistant', 'agent', 'system'].includes(message.role) || /reporter|agent|ballers bot|match bot/i.test(message.sender); }
@@ -76,6 +91,7 @@ export default function DemoPhone() {
   const [side, setSide] = useState<'chat' | 'trace'>('chat');
   const [watchVisible, setWatchVisible] = useState(false);
   const [watchReady, setWatchReady] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
   const [presentationReady, setPresentationReady] = useState('');
   const presentationAcks = useRef(new Set<string>());
   const presentationInFlight = useRef(new Set<string>());
@@ -85,17 +101,30 @@ export default function DemoPhone() {
   const history = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const publishState = useCallback((next: DemoState) => { stateRef.current = next; setState(next); sessionStorage.setItem(PROGRESS_KEY, String(progressFrom(next.messages))); const pending = sessionStorage.getItem(PENDING_KEY); setPendingIndex(pending === null ? null : Number(pending)); }, []);
-  const refresh = useCallback(() => refreshWithCurrentToken(token, async requestToken => normalize(await demoRequest('/api/demo/state', undefined, requestToken)), () => stateRef.current, publishState), [publishState]);
-  const show = useCallback(() => { window.dispatchEvent(new CustomEvent('hb-drawer-open', { detail: 'demo' })); setLoading(true); setWatchReady(false); setOpen(true); }, []);
+  const refreshRef = useRef<ReturnType<typeof createDemoRefresh<DemoState>> | null>(null);
+  if (!refreshRef.current) refreshRef.current = createDemoRefresh(token, async requestToken => normalize(await demoRequest('/api/demo/state', undefined, requestToken)), () => stateRef.current, publishState);
+  const refresh = refreshRef.current;
+  const show = useCallback(() => { window.dispatchEvent(new CustomEvent('hb-drawer-open', { detail: 'demo' })); setOpen(true); }, []);
   useEffect(() => { window.addEventListener('open-demo', show); return () => window.removeEventListener('open-demo', show); }, [show]);
   useEffect(() => { const otherDrawer = (event: Event) => { if ((event as CustomEvent).detail === 'architecture') { playingRef.current = false; setPlaying(false); setOpen(false); } }; window.addEventListener('hb-drawer-open', otherDrawer); return () => window.removeEventListener('hb-drawer-open', otherDrawer); }, []);
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
+    setLoading(true);
     void Promise.resolve().then(refresh).catch(e => { if (!cancelled) setError((e as Error).message); }).finally(() => { if (!cancelled) setLoading(false); });
     const interval = setInterval(() => { void refresh().catch(() => {}); }, 750);
     return () => { cancelled = true; clearInterval(interval); };
   }, [open, refresh]);
+  useEffect(() => { if (!open) setWatchReady(false); }, [open]);
+  useEffect(() => {
+    const visible = () => {
+      const isVisible = document.visibilityState !== 'hidden';
+      setPageVisible(isVisible);
+      if (!isVisible) { playingRef.current = false; setPlaying(false); }
+    };
+    visible(); document.addEventListener('visibilitychange', visible);
+    return () => document.removeEventListener('visibilitychange', visible);
+  }, []);
   // Only the current server gate can move the demo; historical events never trigger writes.
   useEffect(() => {
     const runId = state.presentation?.runId;
@@ -104,16 +133,20 @@ export default function DemoPhone() {
     setSide('chat');
     setPresentationReady('');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const flip = window.setTimeout(() => setSide('trace'), reduced ? 30 : 500);
+    const flip = window.setTimeout(() => {
+      setSide('trace');
+      // On a narrow screen the drawer may still be scrolled to the composer.
+      drawer.current?.querySelector('.hb-demo-stage')?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    }, reduced ? 30 : 500);
     const ready = window.setTimeout(() => setPresentationReady(runId), reduced ? 80 : 1150);
     return () => { clearTimeout(flip); clearTimeout(ready); };
   }, [open, state.presentation?.runId]);
   useEffect(() => {
     const runId = state.presentation?.runId;
-    if (!open || side !== 'trace' || document.visibilityState === 'hidden' || !state.owner || !runId || !watchReady || presentationReady !== runId || presentationAcks.current.has(runId) || presentationInFlight.current.has(runId)) return;
+    if (!open || side !== 'trace' || !pageVisible || !state.owner || !runId || !watchReady || presentationReady !== runId || presentationAcks.current.has(runId) || presentationInFlight.current.has(runId)) return;
     presentationInFlight.current.add(runId);
     void demoRequest('/api/demo/present', { runId }).then(() => { presentationAcks.current.add(runId); }).catch(e => setError((e as Error).message)).finally(() => presentationInFlight.current.delete(runId));
-  }, [open, side, state, watchReady, presentationReady]);
+  }, [open, side, state, watchReady, presentationReady, pageVisible]);
   useEffect(() => { if (!open) return; history.current?.scrollTo({ top: history.current.scrollHeight, behavior: 'instant' }); }, [open, state.messages.length, state.busy, working]);
   useEffect(() => {
     if (!open) return;
@@ -166,7 +199,7 @@ export default function DemoPhone() {
         next = await sendReport(step.senderId, step.text, messageId);
         sessionStorage.removeItem(PENDING_KEY); setPendingIndex(null);
         if (progressFrom(next.messages) <= index) throw new Error('The message has not appeared in the shared chat yet. Pause and try again.');
-        if (playingRef.current && index < SCRIPT.length - 1) { setWorking(false); await new Promise(resolve => setTimeout(resolve, 2200)); setSide('chat'); await new Promise(resolve => setTimeout(resolve, 1200)); setWorking(true); next = stateRef.current; }
+        if (playingRef.current && index < SCRIPT.length - 1) { setWorking(false); await new Promise(resolve => setTimeout(resolve, 2200)); if (!stateRef.current.presentation) setSide('chat'); await new Promise(resolve => setTimeout(resolve, 1200)); setWorking(true); next = stateRef.current; }
       }
     } catch (e) { setError((e as Error).message); } finally { playingRef.current = false; setPlaying(false); setWorking(false); }
   }
