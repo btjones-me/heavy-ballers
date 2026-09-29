@@ -462,6 +462,7 @@ test('private HTTP demos isolate identical message IDs, MCP writes, logs and pub
   assert.ok(!aa.messages.some(m=>m.text==='We won 3-2.'));
   assert.ok(!bb.messages.some(m=>m.text==='We won 4-2.'));
   assert.equal(privateMatch(await (await visitorGet('bootstrap',a.token)).json()).homeScore,4);
+  assert.equal(privateMatch(await (await visitorGet('bootstrap/public',a.token)).json()).homeScore,4);
   assert.equal(privateMatch(await (await visitorGet('bootstrap',b.token)).json()).homeScore,3);
   assert.equal(privateMatch(await (await visitorGet('bootstrap')).json()).homeScore,null);
   assert.deepEqual(await api.getBootstrap(),canonical);
@@ -539,4 +540,22 @@ test('expired iframe session returns an explicit error instead of an untouched a
   const baseline = await api.httpRoute(new Request('https://ballers.test/api/bootstrap'));
   assert.equal(baseline.status, 200);
   assert.equal((await baseline.json()).fixtures.find(f => f.id === 'demo-gw7-1').homeScore, null);
+});
+
+test('expired demo cannot hide the public league; strict iframe reads still fail with a diagnostic ID', async () => {
+  const headers = { 'x-demo-token': 'expired-session' };
+  const response = await api.httpRoute(new Request('https://ballers.test/api/bootstrap/public', { headers }));
+  assert.equal(response.status, 200);
+  const publicData = await response.json();
+  assert.equal(publicData.demoSessionExpired, true);
+  assert.ok(publicData.seasons.some(s => s.league === 'saturday'));
+  assert.equal(publicData.fixtures.find(f => f.id === 'demo-gw7-1').homeScore, null);
+  const strict = await api.httpRoute(new Request('https://ballers.test/api/bootstrap', { headers }));
+  assert.equal(strict.status, 401);
+  const problem = await strict.json();
+  assert.equal(problem.code, 'DEMO_EXPIRED');
+  assert.match(problem.requestId, /^[a-f0-9-]{36}$/);
+  assert.equal(strict.headers.get('X-Request-ID'), problem.requestId);
+  const anonymous = await api.httpRoute(new Request('https://ballers.test/api/bootstrap/public'));
+  assert.equal((await anonymous.json()).demoSessionExpired, false);
 });

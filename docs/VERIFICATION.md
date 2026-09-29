@@ -116,3 +116,11 @@ Validation: 42 deterministic tests and TypeScript checks pass. Browser checks ag
 - Mobile viewport checked at 390×844; iframe scrolls independently, with access to all table columns.
 
 No paid AI calls were needed for these presentation checks. The prior live model smoke suite remains separate; these checks exercise the browser presentation layer that API-only tests do not cover. Screenshot: `qa/iframe-match-centre-desktop.png`.
+
+## 30 September 2026 — expired demo no longer blanks public pages
+
+Production Worker logs confirmed repeated `GET /api/bootstrap` HTTP 401 responses from fixtures, Tuesday tables and Saturday tables at 00:08–00:09 BST. Example request `82ff981e1c82cfa4419fe75502deab33`, 172ms, Worker outcome `ok`: an intentional credential rejection, not a crashed Worker. The preceding release made demo reads strict but did not give PublicSite a recovery path.
+
+PublicSite now uses `/api/bootstrap/public`: valid private credentials still return that visitor's saved demo; an invalid/expired credential returns public league data plus `demoSessionExpired: true`, shown explicitly in a banner. `/api/bootstrap` remains strict for the embedded match centre. No credential is deleted and no saved result is reset automatically. API failures log only method/path/status/code/generated requestId, returned as JSON and `X-Request-ID`; credentials and message bodies are excluded from these application log records.
+
+Checks: TypeScript passes, 43 tests pass, including active-session public readback and expired public/strict endpoint contrast. Browser reproduction expired only a disposable local session: all 24 Tuesday fixtures and both season options stayed available with a clear recovery notice. Screenshot: `qa/expired-demo-recovery.png`. No paid AI calls.

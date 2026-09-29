@@ -9,12 +9,14 @@ import {handleMcp} from '../../../lib/mcp';
 
 const json=(value:unknown)=>Response.json(value,{headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 async function route(request:Request){
+ const requestId=crypto.randomUUID();
  try{
   if(new URL(request.url).pathname==='/api/mcp')return await handleMcp(request);
   await ensureSeed();
   const path=new URL(request.url).pathname.slice(5),post=request.method==='POST';
   if(Number(request.headers.get('content-length')??0)>6_000_000)throw new AppError('This upload is too large.',413);
   if(path==='bootstrap'&&!post){const scope=await visitorScope(request);if(request.headers.get('x-demo-token')&&!scope)throw new AppError('Your demo has expired. Reset the demo to reconnect.',401,'DEMO_EXPIRED');return json(scope?await withDemoScope(scope,()=>getBootstrap()):overlayDemo(await getBootstrap(),freshDemo()));}
+  if(path==='bootstrap/public'&&!post){const scope=await visitorScope(request);const demoSessionExpired=!!request.headers.get('x-demo-token')&&!scope;const data=scope?await withDemoScope(scope,()=>getBootstrap()):overlayDemo(await getBootstrap(),freshDemo());return json({...data,demoSessionExpired});}
   if(path==='contact'&&post){assertSameOrigin(request);return json(await submitEnquiry(await request.json(),request.headers.get('cf-connecting-ip')??'local'))}
   if(path==='demo/state'&&!post)return json(await visitorScope(request)?await runVisitorDemo(request,demoState,'read'):{messages:[],events:[],active:false,owner:false,busy:false,configured:!!runtimeEnv().OPENAI_API_KEY});
   if(path==='demo/start'&&post)return json(await runVisitorDemo(request,startDemo,'start'));
@@ -50,6 +52,12 @@ async function route(request:Request){
    return new Response(item.body,{headers:{'Content-Type':item.httpMetadata?.contentType??'application/octet-stream','Cache-Control':'public, max-age=31536000, immutable','X-Content-Type-Options':'nosniff'}});
   }
   throw new AppError('Page not found.',404);
- }catch(e){const known=e instanceof AppError;if(!known)console.error('API failure',e instanceof Error?e.message:'Unknown error');return Response.json({error:known?e.message:'Something went wrong. Please try again.',code:known?e.code:'INTERNAL_ERROR'},{status:known?e.status:500,headers:{'Cache-Control':'no-store'}})}
+ }catch(e){
+  const known=e instanceof AppError,status=known?e.status:500,code=known?e.code:'INTERNAL_ERROR';
+  // Correlate browser reports without logging credentials, bodies or private messages.
+  const diagnostic=JSON.stringify({event:'api_error',requestId,method:request.method,path:new URL(request.url).pathname,status,code});
+  if(status>=500)console.error(diagnostic);else console.warn(diagnostic);
+  return Response.json({error:known?e.message:'Something went wrong. Please try again.',code,requestId},{status,headers:{'Cache-Control':'no-store','X-Request-ID':requestId}});
+ }
 }
 export const GET=route;export const POST=route;
