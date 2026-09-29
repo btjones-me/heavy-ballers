@@ -1,0 +1,1631 @@
+{
+  "seasons": [
+    {
+      "id": "tuesday-s1",
+      "name": "Tuesday Season 1 \u2014 archive",
+      "league": "tuesday",
+      "demo": false,
+      "rules": {
+        "win": 3,
+        "draw": 1,
+        "shootout": 1
+      }
+    },
+    {
+      "id": "saturday-s3",
+      "name": "Saturday Season 3 \u2014 archive",
+      "league": "saturday",
+      "demo": false,
+      "rules": {
+        "win": 3,
+        "draw": 1,
+        "shootout": 1
+      }
+    },
+    {
+      "id": "saturday-s2",
+      "name": "Saturday Season 2 \u2014 archive",
+      "league": "saturday",
+      "demo": false,
+      "rules": {
+        "win": 3,
+        "draw": 1,
+        "shootout": 1
+      }
+    }
+  ],
+  "teams": [
+    {
+      "id": "tuesday-s1-whites",
+      "seasonId": "tuesday-s1",
+      "name": "Whites",
+      "shortName": "Whites",
+      "color": "#c7cbd2",
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks",
+      "seasonId": "tuesday-s1",
+      "name": "Blacks",
+      "shortName": "Blacks",
+      "color": "#333333",
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-reds",
+      "seasonId": "saturday-s3",
+      "name": "Reds",
+      "shortName": "Reds",
+      "color": "#b62c30",
+      "photo": "/assets/PXL_20260711_100923272.webp"
+    },
+    {
+      "id": "saturday-s3-blacks",
+      "seasonId": "saturday-s3",
+      "name": "Blacks",
+      "shortName": "Blacks",
+      "color": "#333333",
+      "photo": "/assets/PXL_20260711_100827464.webp"
+    },
+    {
+      "id": "saturday-s2-reds",
+      "seasonId": "saturday-s2",
+      "name": "Reds",
+      "shortName": "Reds",
+      "color": "#b62c30",
+      "photo": "/assets/PXL_20260711_100923272.webp"
+    },
+    {
+      "id": "saturday-s2-blacks",
+      "seasonId": "saturday-s2",
+      "name": "Blacks",
+      "shortName": "Blacks",
+      "color": "#333333",
+      "photo": "/assets/PXL_20260711_100827464.webp"
+    }
+  ],
+  "players": [
+    {
+      "id": "tuesday-s1-whites-ben-p",
+      "teamId": "tuesday-s1-whites",
+      "name": "Ben P.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-whites-ronan-f",
+      "teamId": "tuesday-s1-whites",
+      "name": "Ronan F.",
+      "aliases": [],
+      "photo": "/assets/headshot-ronan.png"
+    },
+    {
+      "id": "tuesday-s1-whites-andres-c",
+      "teamId": "tuesday-s1-whites",
+      "name": "Andres C.",
+      "aliases": [],
+      "photo": "/assets/headshot-andres.png"
+    },
+    {
+      "id": "tuesday-s1-whites-asim-k",
+      "teamId": "tuesday-s1-whites",
+      "name": "Asim K.",
+      "aliases": [],
+      "photo": "/assets/headshot-asim.png"
+    },
+    {
+      "id": "tuesday-s1-whites-jake-b",
+      "teamId": "tuesday-s1-whites",
+      "name": "Jake B.",
+      "aliases": [],
+      "photo": "/assets/headshot-jake.png"
+    },
+    {
+      "id": "tuesday-s1-whites-brock-r",
+      "teamId": "tuesday-s1-whites",
+      "name": "Brock R.",
+      "aliases": [],
+      "photo": "/assets/headshot-brock.png"
+    },
+    {
+      "id": "tuesday-s1-whites-reece-s",
+      "teamId": "tuesday-s1-whites",
+      "name": "Reece S.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-whites-jon-r",
+      "teamId": "tuesday-s1-whites",
+      "name": "Jon R.",
+      "aliases": [],
+      "photo": "/assets/headshot-jon.png"
+    },
+    {
+      "id": "tuesday-s1-whites-ryan-c",
+      "teamId": "tuesday-s1-whites",
+      "name": "Ryan C.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-whites-ricky-r",
+      "teamId": "tuesday-s1-whites",
+      "name": "Ricky R.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-blake-c",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Blake C.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-rhys-f",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Rhys F.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-luke-c",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Luke C.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-sam-r",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Sam R.",
+      "aliases": [],
+      "photo": "/assets/headshot-sam-roberts.png"
+    },
+    {
+      "id": "tuesday-s1-blacks-luri-s",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Luri S.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-jay-k",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Jay K.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-david-p",
+      "teamId": "tuesday-s1-blacks",
+      "name": "David P.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-diego-s",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Diego S.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-abdul-d",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Abdul D.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "tuesday-s1-blacks-ben-j",
+      "teamId": "tuesday-s1-blacks",
+      "name": "Ben J.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-reds-jermaine-t",
+      "teamId": "saturday-s3-reds",
+      "name": "Jermaine T.",
+      "aliases": [],
+      "photo": "/assets/headshot-jermaine.png"
+    },
+    {
+      "id": "saturday-s3-reds-tariq-r",
+      "teamId": "saturday-s3-reds",
+      "name": "Tariq R.",
+      "aliases": [],
+      "photo": "/assets/headshot-tariq.png"
+    },
+    {
+      "id": "saturday-s3-reds-sam-r",
+      "teamId": "saturday-s3-reds",
+      "name": "Sam R.",
+      "aliases": [],
+      "photo": "/assets/headshot-sam-roberts.png"
+    },
+    {
+      "id": "saturday-s3-reds-jake-b",
+      "teamId": "saturday-s3-reds",
+      "name": "Jake B.",
+      "aliases": [],
+      "photo": "/assets/headshot-jake.png"
+    },
+    {
+      "id": "saturday-s3-reds-paul-b",
+      "teamId": "saturday-s3-reds",
+      "name": "Paul B.",
+      "aliases": [],
+      "photo": "/assets/headshot-paul-brown.png"
+    },
+    {
+      "id": "saturday-s3-reds-asim-k",
+      "teamId": "saturday-s3-reds",
+      "name": "Asim K.",
+      "aliases": [],
+      "photo": "/assets/headshot-asim.png"
+    },
+    {
+      "id": "saturday-s3-reds-ryan-c",
+      "teamId": "saturday-s3-reds",
+      "name": "Ryan C.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-reds-peter-j",
+      "teamId": "saturday-s3-reds",
+      "name": "Peter J.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-reds-ronan-f",
+      "teamId": "saturday-s3-reds",
+      "name": "Ronan F.",
+      "aliases": [],
+      "photo": "/assets/headshot-ronan.png"
+    },
+    {
+      "id": "saturday-s3-reds-paul-m",
+      "teamId": "saturday-s3-reds",
+      "name": "Paul M.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-blacks-ben-p",
+      "teamId": "saturday-s3-blacks",
+      "name": "Ben P.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-blacks-colin-f",
+      "teamId": "saturday-s3-blacks",
+      "name": "Colin F.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-blacks-andres-c",
+      "teamId": "saturday-s3-blacks",
+      "name": "Andres C.",
+      "aliases": [],
+      "photo": "/assets/headshot-andres.png"
+    },
+    {
+      "id": "saturday-s3-blacks-sam-k",
+      "teamId": "saturday-s3-blacks",
+      "name": "Sam K.",
+      "aliases": [],
+      "photo": "/assets/headshot-sam-king.png"
+    },
+    {
+      "id": "saturday-s3-blacks-alex-n",
+      "teamId": "saturday-s3-blacks",
+      "name": "Alex N.",
+      "aliases": [],
+      "photo": "/assets/headshot-alex.png"
+    },
+    {
+      "id": "saturday-s3-blacks-ily-m",
+      "teamId": "saturday-s3-blacks",
+      "name": "Ily M.",
+      "aliases": [],
+      "photo": "/assets/headshot-illy.png"
+    },
+    {
+      "id": "saturday-s3-blacks-tiber-k",
+      "teamId": "saturday-s3-blacks",
+      "name": "Tiber K.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-blacks-reece-s",
+      "teamId": "saturday-s3-blacks",
+      "name": "Reece S.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s3-blacks-brock-r",
+      "teamId": "saturday-s3-blacks",
+      "name": "Brock R.",
+      "aliases": [],
+      "photo": "/assets/headshot-brock.png"
+    },
+    {
+      "id": "saturday-s3-blacks-jon-r",
+      "teamId": "saturday-s3-blacks",
+      "name": "Jon R.",
+      "aliases": [],
+      "photo": "/assets/headshot-jon.png"
+    },
+    {
+      "id": "saturday-s2-reds-jermaine-t",
+      "teamId": "saturday-s2-reds",
+      "name": "Jermaine T.",
+      "aliases": [],
+      "photo": "/assets/headshot-jermaine.png"
+    },
+    {
+      "id": "saturday-s2-reds-tariq-r",
+      "teamId": "saturday-s2-reds",
+      "name": "Tariq R.",
+      "aliases": [],
+      "photo": "/assets/headshot-tariq.png"
+    },
+    {
+      "id": "saturday-s2-reds-sam-r",
+      "teamId": "saturday-s2-reds",
+      "name": "Sam R.",
+      "aliases": [],
+      "photo": "/assets/headshot-sam-roberts.png"
+    },
+    {
+      "id": "saturday-s2-reds-jake-b",
+      "teamId": "saturday-s2-reds",
+      "name": "Jake B.",
+      "aliases": [],
+      "photo": "/assets/headshot-jake.png"
+    },
+    {
+      "id": "saturday-s2-reds-paul-b",
+      "teamId": "saturday-s2-reds",
+      "name": "Paul B.",
+      "aliases": [],
+      "photo": "/assets/headshot-paul-brown.png"
+    },
+    {
+      "id": "saturday-s2-reds-asim-k",
+      "teamId": "saturday-s2-reds",
+      "name": "Asim K.",
+      "aliases": [],
+      "photo": "/assets/headshot-asim.png"
+    },
+    {
+      "id": "saturday-s2-reds-ryan-c",
+      "teamId": "saturday-s2-reds",
+      "name": "Ryan C.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s2-reds-peter-j",
+      "teamId": "saturday-s2-reds",
+      "name": "Peter J.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s2-reds-ronan-f",
+      "teamId": "saturday-s2-reds",
+      "name": "Ronan F.",
+      "aliases": [],
+      "photo": "/assets/headshot-ronan.png"
+    },
+    {
+      "id": "saturday-s2-reds-paul-m",
+      "teamId": "saturday-s2-reds",
+      "name": "Paul M.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s2-blacks-ben-p",
+      "teamId": "saturday-s2-blacks",
+      "name": "Ben P.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s2-blacks-colin-f",
+      "teamId": "saturday-s2-blacks",
+      "name": "Colin F.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s2-blacks-andres-c",
+      "teamId": "saturday-s2-blacks",
+      "name": "Andres C.",
+      "aliases": [],
+      "photo": "/assets/headshot-andres.png"
+    },
+    {
+      "id": "saturday-s2-blacks-sam-k",
+      "teamId": "saturday-s2-blacks",
+      "name": "Sam K.",
+      "aliases": [],
+      "photo": "/assets/headshot-sam-king.png"
+    },
+    {
+      "id": "saturday-s2-blacks-alex-n",
+      "teamId": "saturday-s2-blacks",
+      "name": "Alex N.",
+      "aliases": [],
+      "photo": "/assets/headshot-alex.png"
+    },
+    {
+      "id": "saturday-s2-blacks-ily-m",
+      "teamId": "saturday-s2-blacks",
+      "name": "Ily M.",
+      "aliases": [],
+      "photo": "/assets/headshot-illy.png"
+    },
+    {
+      "id": "saturday-s2-blacks-tiber-k",
+      "teamId": "saturday-s2-blacks",
+      "name": "Tiber K.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s2-blacks-reece-s",
+      "teamId": "saturday-s2-blacks",
+      "name": "Reece S.",
+      "aliases": [],
+      "photo": ""
+    },
+    {
+      "id": "saturday-s2-blacks-brock-r",
+      "teamId": "saturday-s2-blacks",
+      "name": "Brock R.",
+      "aliases": [],
+      "photo": "/assets/headshot-brock.png"
+    },
+    {
+      "id": "saturday-s2-blacks-jon-r",
+      "teamId": "saturday-s2-blacks",
+      "name": "Jon R.",
+      "aliases": [],
+      "photo": "/assets/headshot-jon.png"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "tuesday-s1-gw8",
+      "seasonId": "tuesday-s1",
+      "round": 8,
+      "kickoff": "2026-09-29T18:00:00Z",
+      "homeTeamId": "tuesday-s1-blacks",
+      "awayTeamId": "tuesday-s1-whites",
+      "homeScore": null,
+      "awayScore": null,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "tuesday-s1-gw7",
+      "seasonId": "tuesday-s1",
+      "round": 7,
+      "kickoff": "2026-09-22T18:00:00Z",
+      "homeTeamId": "tuesday-s1-whites",
+      "awayTeamId": "tuesday-s1-blacks",
+      "homeScore": 4,
+      "awayScore": 8,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "tuesday-s1-gw6",
+      "seasonId": "tuesday-s1",
+      "round": 6,
+      "kickoff": "2026-09-15T18:00:00Z",
+      "homeTeamId": "tuesday-s1-blacks",
+      "awayTeamId": "tuesday-s1-whites",
+      "homeScore": 1,
+      "awayScore": 11,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "tuesday-s1-gw5",
+      "seasonId": "tuesday-s1",
+      "round": 5,
+      "kickoff": "2026-09-08T18:00:00Z",
+      "homeTeamId": "tuesday-s1-whites",
+      "awayTeamId": "tuesday-s1-blacks",
+      "homeScore": 9,
+      "awayScore": 5,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "tuesday-s1-gw4",
+      "seasonId": "tuesday-s1",
+      "round": 4,
+      "kickoff": "2026-09-01T18:00:00Z",
+      "homeTeamId": "tuesday-s1-blacks",
+      "awayTeamId": "tuesday-s1-whites",
+      "homeScore": 3,
+      "awayScore": 3,
+      "homeScorers": [
+        {
+          "playerId": "tuesday-s1-blacks-rhys-f",
+          "goals": 2
+        },
+        {
+          "playerId": "tuesday-s1-blacks-luke-c",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "tuesday-s1-gw3",
+      "seasonId": "tuesday-s1",
+      "round": 3,
+      "kickoff": "2026-08-25T18:00:00Z",
+      "homeTeamId": "tuesday-s1-whites",
+      "awayTeamId": "tuesday-s1-blacks",
+      "homeScore": 12,
+      "awayScore": 1,
+      "homeScorers": [
+        {
+          "playerId": "tuesday-s1-whites-ben-p",
+          "goals": 6
+        },
+        {
+          "playerId": "tuesday-s1-whites-reece-s",
+          "goals": 2
+        },
+        {
+          "playerId": "tuesday-s1-whites-andres-c",
+          "goals": 2
+        },
+        {
+          "playerId": "tuesday-s1-whites-jon-r",
+          "goals": 1
+        },
+        {
+          "playerId": "tuesday-s1-whites-ryan-c",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "tuesday-s1-blacks-diego-s",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "tuesday-s1-gw2",
+      "seasonId": "tuesday-s1",
+      "round": 2,
+      "kickoff": "2026-08-18T18:00:00Z",
+      "homeTeamId": "tuesday-s1-blacks",
+      "awayTeamId": "tuesday-s1-whites",
+      "homeScore": 8,
+      "awayScore": 6,
+      "homeScorers": [
+        {
+          "playerId": "tuesday-s1-blacks-rhys-f",
+          "goals": 5
+        },
+        {
+          "playerId": "tuesday-s1-blacks-sam-r",
+          "goals": 2
+        },
+        {
+          "playerId": "tuesday-s1-blacks-luke-c",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "tuesday-s1-whites-asim-k",
+          "goals": 2
+        },
+        {
+          "playerId": "tuesday-s1-whites-ricky-r",
+          "goals": 2
+        },
+        {
+          "playerId": "tuesday-s1-whites-reece-s",
+          "goals": 1
+        },
+        {
+          "playerId": "tuesday-s1-whites-andres-c",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "tuesday-s1-gw1",
+      "seasonId": "tuesday-s1",
+      "round": 1,
+      "kickoff": "2026-08-11T18:00:00Z",
+      "homeTeamId": "tuesday-s1-whites",
+      "awayTeamId": "tuesday-s1-blacks",
+      "homeScore": 11,
+      "awayScore": 5,
+      "homeScorers": [
+        {
+          "playerId": "tuesday-s1-whites-reece-s",
+          "goals": 1
+        },
+        {
+          "playerId": "tuesday-s1-whites-ben-p",
+          "goals": 2
+        },
+        {
+          "playerId": "tuesday-s1-whites-ronan-f",
+          "goals": 3
+        },
+        {
+          "playerId": "tuesday-s1-whites-andres-c",
+          "goals": 4
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "tuesday-s1-blacks-sam-r",
+          "goals": 1
+        },
+        {
+          "playerId": "tuesday-s1-blacks-abdul-d",
+          "goals": 1
+        },
+        {
+          "playerId": "tuesday-s1-blacks-blake-c",
+          "goals": 1
+        },
+        {
+          "playerId": "tuesday-s1-blacks-diego-s",
+          "goals": 1
+        },
+        {
+          "playerId": "tuesday-s1-blacks-luke-c",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw13",
+      "seasonId": "saturday-s3",
+      "round": 13,
+      "kickoff": "2026-09-26T09:00:00Z",
+      "homeTeamId": "saturday-s3-reds",
+      "awayTeamId": "saturday-s3-blacks",
+      "homeScore": 10,
+      "awayScore": 9,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-sam-r",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw12",
+      "seasonId": "saturday-s3",
+      "round": 12,
+      "kickoff": "2026-09-19T09:00:00Z",
+      "homeTeamId": "saturday-s3-blacks",
+      "awayTeamId": "saturday-s3-reds",
+      "homeScore": 11,
+      "awayScore": 10,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-blacks-ben-p",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s3-blacks-reece-s",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s3-blacks-jon-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-blacks-andres-c",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-tariq-r",
+          "goals": 2
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw11",
+      "seasonId": "saturday-s3",
+      "round": 11,
+      "kickoff": "2026-09-12T09:00:00Z",
+      "homeTeamId": "saturday-s3-reds",
+      "awayTeamId": "saturday-s3-blacks",
+      "homeScore": 8,
+      "awayScore": 5,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 6
+        },
+        {
+          "playerId": "saturday-s3-reds-tariq-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-jake-b",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-paul-b",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-blacks-colin-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-andres-c",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-blacks-brock-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-blacks-alex-n",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw10",
+      "seasonId": "saturday-s3",
+      "round": 10,
+      "kickoff": "2026-09-05T09:00:00Z",
+      "homeTeamId": "saturday-s3-blacks",
+      "awayTeamId": "saturday-s3-reds",
+      "homeScore": 3,
+      "awayScore": 2,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-blacks-colin-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-alex-n",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-reds-paul-b",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-tariq-r",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 2
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw9",
+      "seasonId": "saturday-s3",
+      "round": 9,
+      "kickoff": "2026-08-29T09:00:00Z",
+      "homeTeamId": "saturday-s3-reds",
+      "awayTeamId": "saturday-s3-blacks",
+      "homeScore": 6,
+      "awayScore": 12,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-reds-sam-r",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw8",
+      "seasonId": "saturday-s3",
+      "round": 8,
+      "kickoff": "2026-08-22T09:00:00Z",
+      "homeTeamId": "saturday-s3-blacks",
+      "awayTeamId": "saturday-s3-reds",
+      "homeScore": 8,
+      "awayScore": 9,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-blacks-brock-r",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-blacks-colin-f",
+          "goals": 2
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-reds-paul-b",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 2
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw7",
+      "seasonId": "saturday-s3",
+      "round": 7,
+      "kickoff": "2026-08-15T09:00:00Z",
+      "homeTeamId": "saturday-s3-reds",
+      "awayTeamId": "saturday-s3-blacks",
+      "homeScore": 2,
+      "awayScore": 5,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-reds-tariq-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-asim-k",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-blacks-colin-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-andres-c",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-brock-r",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw6",
+      "seasonId": "saturday-s3",
+      "round": 6,
+      "kickoff": "2026-08-08T09:00:00Z",
+      "homeTeamId": "saturday-s3-blacks",
+      "awayTeamId": "saturday-s3-reds",
+      "homeScore": 4,
+      "awayScore": 11,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-blacks-alex-n",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-ben-p",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s3-reds-asim-k",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-jake-b",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw5",
+      "seasonId": "saturday-s3",
+      "round": 5,
+      "kickoff": "2026-08-01T09:00:00Z",
+      "homeTeamId": "saturday-s3-reds",
+      "awayTeamId": "saturday-s3-blacks",
+      "homeScore": 10,
+      "awayScore": 5,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-reds-tariq-r",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-sam-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-asim-k",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-jake-b",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-blacks-alex-n",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-blacks-reece-s",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-blacks-ben-p",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-blacks-sam-k",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw4",
+      "seasonId": "saturday-s3",
+      "round": 4,
+      "kickoff": "2026-07-25T09:00:00Z",
+      "homeTeamId": "saturday-s3-blacks",
+      "awayTeamId": "saturday-s3-reds",
+      "homeScore": 7,
+      "awayScore": 7,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-blacks-andres-c",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-blacks-alex-n",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-sam-k",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-jake-b",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-asim-k",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw3",
+      "seasonId": "saturday-s3",
+      "round": 3,
+      "kickoff": "2026-07-18T09:00:00Z",
+      "homeTeamId": "saturday-s3-reds",
+      "awayTeamId": "saturday-s3-blacks",
+      "homeScore": 5,
+      "awayScore": 3,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-tariq-r",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-blacks-andres-c",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-brock-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-blacks-ben-p",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw2",
+      "seasonId": "saturday-s3",
+      "round": 2,
+      "kickoff": "2026-07-11T09:00:00Z",
+      "homeTeamId": "saturday-s3-blacks",
+      "awayTeamId": "saturday-s3-reds",
+      "homeScore": 3,
+      "awayScore": 6,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-blacks-reece-s",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-sam-k",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-reds-jake-b",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-paul-b",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s3-gw1",
+      "seasonId": "saturday-s3",
+      "round": 1,
+      "kickoff": "2026-07-04T09:00:00Z",
+      "homeTeamId": "saturday-s3-reds",
+      "awayTeamId": "saturday-s3-blacks",
+      "homeScore": 7,
+      "awayScore": 6,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s3-reds-jermaine-t",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-ronan-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-reds-asim-k",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-reds-tariq-r",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s3-blacks-reece-s",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-ben-p",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s3-blacks-brock-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s3-blacks-andres-c",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw12",
+      "seasonId": "saturday-s2",
+      "round": 12,
+      "kickoff": "2026-06-27T09:00:00Z",
+      "homeTeamId": "saturday-s2-blacks",
+      "awayTeamId": "saturday-s2-reds",
+      "homeScore": 7,
+      "awayScore": 9,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s2-blacks-colin-f",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s2-reds-ronan-f",
+          "goals": 5
+        },
+        {
+          "playerId": "saturday-s2-reds-tariq-r",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s2-reds-jake-b",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-reds-asim-k",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s2-reds-jermaine-t",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s2-reds-sam-r",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw11",
+      "seasonId": "saturday-s2",
+      "round": 11,
+      "kickoff": "2026-06-20T09:00:00Z",
+      "homeTeamId": "saturday-s2-reds",
+      "awayTeamId": "saturday-s2-blacks",
+      "homeScore": 5,
+      "awayScore": 7,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s2-reds-asim-k",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-reds-ronan-f",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s2-blacks-colin-f",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s2-blacks-reece-s",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-blacks-andres-c",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s2-blacks-brock-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s2-blacks-jon-r",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw10",
+      "seasonId": "saturday-s2",
+      "round": 10,
+      "kickoff": "2026-06-13T09:00:00Z",
+      "homeTeamId": "saturday-s2-blacks",
+      "awayTeamId": "saturday-s2-reds",
+      "homeScore": 7,
+      "awayScore": 12,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s2-blacks-reece-s",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-blacks-ben-p",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-blacks-colin-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-blacks-jon-r",
+          "goals": 3
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s2-reds-jermaine-t",
+          "goals": 6
+        },
+        {
+          "playerId": "saturday-s2-reds-ronan-f",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-reds-tariq-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s2-reds-asim-k",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw9",
+      "seasonId": "saturday-s2",
+      "round": 9,
+      "kickoff": "2026-06-06T09:00:00Z",
+      "homeTeamId": "saturday-s2-reds",
+      "awayTeamId": "saturday-s2-blacks",
+      "homeScore": 12,
+      "awayScore": 3,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s2-reds-sam-r",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-reds-jermaine-t",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s2-reds-tariq-r",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s2-reds-asim-k",
+          "goals": 2
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s2-blacks-brock-r",
+          "goals": 1
+        },
+        {
+          "playerId": "saturday-s2-blacks-colin-f",
+          "goals": 2
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw8",
+      "seasonId": "saturday-s2",
+      "round": 8,
+      "kickoff": "2026-05-30T09:00:00Z",
+      "homeTeamId": "saturday-s2-blacks",
+      "awayTeamId": "saturday-s2-reds",
+      "homeScore": 9,
+      "awayScore": 10,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw7",
+      "seasonId": "saturday-s2",
+      "round": 7,
+      "kickoff": "2026-05-23T09:00:00Z",
+      "homeTeamId": "saturday-s2-reds",
+      "awayTeamId": "saturday-s2-blacks",
+      "homeScore": 4,
+      "awayScore": 3,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw6",
+      "seasonId": "saturday-s2",
+      "round": 6,
+      "kickoff": "2026-05-16T09:00:00Z",
+      "homeTeamId": "saturday-s2-blacks",
+      "awayTeamId": "saturday-s2-reds",
+      "homeScore": 6,
+      "awayScore": 9,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw5",
+      "seasonId": "saturday-s2",
+      "round": 5,
+      "kickoff": "2026-05-09T09:00:00Z",
+      "homeTeamId": "saturday-s2-reds",
+      "awayTeamId": "saturday-s2-blacks",
+      "homeScore": 9,
+      "awayScore": 3,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw4",
+      "seasonId": "saturday-s2",
+      "round": 4,
+      "kickoff": "2026-05-02T09:00:00Z",
+      "homeTeamId": "saturday-s2-blacks",
+      "awayTeamId": "saturday-s2-reds",
+      "homeScore": 4,
+      "awayScore": 11,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw3",
+      "seasonId": "saturday-s2",
+      "round": 3,
+      "kickoff": "2026-04-25T09:00:00Z",
+      "homeTeamId": "saturday-s2-reds",
+      "awayTeamId": "saturday-s2-blacks",
+      "homeScore": 5,
+      "awayScore": 8,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw2",
+      "seasonId": "saturday-s2",
+      "round": 2,
+      "kickoff": "2026-04-18T09:00:00Z",
+      "homeTeamId": "saturday-s2-blacks",
+      "awayTeamId": "saturday-s2-reds",
+      "homeScore": 9,
+      "awayScore": 6,
+      "homeScorers": [],
+      "awayScorers": [],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    },
+    {
+      "id": "saturday-s2-gw1",
+      "seasonId": "saturday-s2",
+      "round": 1,
+      "kickoff": "2026-04-11T09:00:00Z",
+      "homeTeamId": "saturday-s2-reds",
+      "awayTeamId": "saturday-s2-blacks",
+      "homeScore": 5,
+      "awayScore": 0,
+      "homeScorers": [
+        {
+          "playerId": "saturday-s2-reds-jermaine-t",
+          "goals": 19
+        },
+        {
+          "playerId": "saturday-s2-reds-tariq-r",
+          "goals": 10
+        },
+        {
+          "playerId": "saturday-s2-reds-asim-k",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s2-reds-sam-r",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s2-reds-jake-b",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-reds-ryan-c",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-reds-paul-b",
+          "goals": 1
+        }
+      ],
+      "awayScorers": [
+        {
+          "playerId": "saturday-s2-blacks-colin-f",
+          "goals": 14
+        },
+        {
+          "playerId": "saturday-s2-blacks-ben-p",
+          "goals": 10
+        },
+        {
+          "playerId": "saturday-s2-blacks-andres-c",
+          "goals": 5
+        },
+        {
+          "playerId": "saturday-s2-blacks-brock-r",
+          "goals": 4
+        },
+        {
+          "playerId": "saturday-s2-blacks-alex-n",
+          "goals": 3
+        },
+        {
+          "playerId": "saturday-s2-blacks-reece-s",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-blacks-tiber-k",
+          "goals": 2
+        },
+        {
+          "playerId": "saturday-s2-blacks-sam-k",
+          "goals": 1
+        }
+      ],
+      "shootoutWinnerId": null,
+      "version": 1,
+      "sourceNote": "Public website archive, captured 29 September 2026. Shootout outcomes unavailable; recorded scorer totals may be incomplete or inconsistent."
+    }
+  ]
+}

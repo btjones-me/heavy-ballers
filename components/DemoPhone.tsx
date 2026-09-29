@@ -1,0 +1,131 @@
+'use client';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, X, Phone, Video, MoreVertical, Send, Play, Pause, LockKeyhole, ChevronDown, CheckCheck, Bot, Smile, Paperclip, AlertCircle, Radio, LoaderCircle } from 'lucide-react';
+import Link from 'next/link';
+import './demo.css';
+
+type Message = { id: string; sender: string; text: string; role: string; createdAt: string };
+type DemoEvent = { id: string; label: string; status: string; tool?: string; arguments?: unknown; result?: unknown; createdAt: string };
+type MatchSnapshot = { homeName: string; awayName: string; homeScore: number | null; awayScore: number | null; shootoutWinnerName: string | null; homePoints: number | null; awayPoints: number | null };
+type DemoState = { match?: MatchSnapshot | null; messages: Message[]; events: DemoEvent[]; active: boolean; owner: boolean; busy: boolean; configured: boolean };
+const EMPTY: DemoState = { messages: [], events: [], active: false, owner: false, busy: false, configured: true };
+const TOKEN_KEY = 'heavy-ballers-demo-token';
+const PROGRESS_KEY = 'heavy-ballers-demo-progress';
+const PENDING_KEY = 'heavy-ballers-demo-pending';
+const STEP_ID_KEY = 'heavy-ballers-demo-message-ids';
+const senders = [{ id: 'ben', label: 'Ben J', team: 'Queens', color: '#7eccad' }, { id: 'alfie', label: 'Alfie H', team: 'Queens', color: '#b2a0e9' }, { id: 'sam', label: 'Sam K', team: 'Queens', color: '#ecac8b' }, { id: 'leo', label: 'Leo M', team: 'NetSix', color: '#75bee2' }];
+const SCRIPT = [{ senderId: 'ben', text: 'We won 4–2.' }, { senderId: 'alfie', text: 'Alfie H scored two for Queens.' }, { senderId: 'sam', text: 'Sam K got one and Ben J got the other for Queens.' }, { senderId: 'leo', text: 'Leo M and Jamie R got one each for NetSix.' }, { senderId: 'ben', text: 'NetSix won the penalty shootout.' }];
+const normalizedText = (value: string) => value.replace(/[–—−]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
+const progressFrom = (messages: Message[]) => { let count = 0; for (const step of SCRIPT) { if (messages.some(m => normalizedText(m.text) === normalizedText(step.text))) count++; else break; } return count; };
+function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
+async function demoRequest(path: string, body?: unknown) {
+  const response = await fetch(path, { credentials: 'same-origin', headers: { 'x-demo-token': token(), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}) });
+  const data = await response.json() as Record<string, unknown>;
+  if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : (data.error as { message?: string })?.message || String(data.message || `The demo could not complete this request (${response.status}).`));
+  return data;
+}
+function normalize(raw: Record<string, unknown>): DemoState { const state = (raw.state || raw) as Partial<DemoState>; return { ...EMPTY, ...state, messages: state.messages || [], events: [...(state.events || [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt)) }; }
+function senderInfo(sender: string) { return senders.find(s => s.id === sender || s.label.toLowerCase() === sender.toLowerCase()); }
+function isAgent(message: Message) { return ['assistant', 'agent', 'system'].includes(message.role) || /reporter|agent|ballers bot|match bot/i.test(message.sender); }
+
+export default function DemoPhone() {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<DemoState>(EMPTY);
+  const stateRef = useRef<DemoState>(EMPTY);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const playingRef = useRef(false);
+  useEffect(() => () => { playingRef.current = false; }, []);
+  const [message, setMessage] = useState('');
+  const [sender, setSender] = useState('ben');
+  const [showLog, setShowLog] = useState(false);
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
+  const drawer = useRef<HTMLElement>(null);
+  const history = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const publishState = useCallback((next: DemoState) => { stateRef.current = next; setState(next); sessionStorage.setItem(PROGRESS_KEY, String(progressFrom(next.messages))); const pending = sessionStorage.getItem(PENDING_KEY); setPendingIndex(pending === null ? null : Number(pending)); }, []);
+  const refresh = useCallback(async () => { const next = normalize(await demoRequest('/api/demo/state')); publishState(next); return next; }, [publishState]);
+  const show = useCallback(() => { setLoading(true); setOpen(true); }, []);
+  useEffect(() => { window.addEventListener('open-demo', show); return () => window.removeEventListener('open-demo', show); }, [show]);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void Promise.resolve().then(refresh).catch(e => { if (!cancelled) setError((e as Error).message); }).finally(() => { if (!cancelled) setLoading(false); });
+    const interval = setInterval(() => { void refresh().catch(() => {}); }, 2000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [open, refresh]);
+  useEffect(() => { if (!open) return; history.current?.scrollTo({ top: history.current.scrollHeight, behavior: 'instant' }); }, [open, state.messages.length, state.busy, working]);
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    drawer.current?.querySelector<HTMLButtonElement>('.hb-demo-close')?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setOpen(false); playingRef.current = false; setPlaying(false); }
+      if (event.key !== 'Tab') return;
+      const nodes = Array.from(drawer.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex="0"]') || []);
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); previous?.focus(); };
+  }, [open]);
+  function close() { playingRef.current = false; setPlaying(false); setOpen(false); }
+  async function startSession() {
+    const current = await refresh();
+    if (current.active && !current.owner) throw new Error('Someone else is demonstrating the chat. You can watch their conversation live.');
+    if (current.active && current.owner) return current;
+    const result = await demoRequest('/api/demo/start', {});
+    if (typeof result.token === 'string') sessionStorage.setItem(TOKEN_KEY, result.token);
+    const next = await refresh();
+    if (!next.messages.some(m => m.role === 'user')) { sessionStorage.removeItem(STEP_ID_KEY); sessionStorage.removeItem(PENDING_KEY); setPendingIndex(null); }
+    return next;
+  }
+  async function sendReport(senderId: string, text: string, messageId = crypto.randomUUID()) {
+    await demoRequest('/api/demo/message', { conversationId: 'queens-pork-demo', fixtureId: 'demo-gw7-1', messageId, senderId, text, timestamp: new Date().toISOString() });
+    const next = await refresh();
+    window.dispatchEvent(new Event('hb:data-changed'));
+    return next;
+  }
+  async function play() {
+    if (playingRef.current) { playingRef.current = false; setPlaying(false); return; }
+    playingRef.current = true; setPlaying(true); setError(''); setWorking(true);
+    try {
+      let next = await startSession();
+      while (playingRef.current) {
+        const pending = sessionStorage.getItem(PENDING_KEY);
+        const index = pending === null ? progressFrom(next.messages) : Number(pending);
+        if (index >= SCRIPT.length) break;
+        if (!next.owner) throw new Error('This shared demonstration is now controlled by another visitor.');
+        const ids = JSON.parse(sessionStorage.getItem(STEP_ID_KEY) || '{}') as Record<string, string>;
+        const messageId = ids[index] || crypto.randomUUID();
+        ids[index] = messageId; sessionStorage.setItem(STEP_ID_KEY, JSON.stringify(ids));
+        const step = SCRIPT[index];
+        sessionStorage.setItem(PENDING_KEY, String(index)); setPendingIndex(index);
+        next = await sendReport(step.senderId, step.text, messageId);
+        sessionStorage.removeItem(PENDING_KEY); setPendingIndex(null);
+        if (progressFrom(next.messages) <= index) throw new Error('The message has not appeared in the shared chat yet. Pause and try again.');
+        if (playingRef.current && index < SCRIPT.length - 1) { setWorking(false); await new Promise(resolve => setTimeout(resolve, 1600)); setWorking(true); next = stateRef.current; }
+      }
+    } catch (e) { setError((e as Error).message); } finally { playingRef.current = false; setPlaying(false); setWorking(false); }
+  }
+  async function send(event: React.FormEvent) {
+    event.preventDefault(); const text = message.trim(); if (!text || working || playing) return;
+    setWorking(true); setError('');
+    try { await startSession(); await sendReport(sender, text); setMessage(''); } catch (e) { setError((e as Error).message); } finally { setWorking(false); }
+  }
+  async function release() {
+    playingRef.current = false; setPlaying(false); setWorking(true); setError('');
+    try { await demoRequest('/api/demo/release', {}); await refresh(); } catch (e) { setError((e as Error).message); } finally { setWorking(false); }
+  }
+  const progress = Math.min(progressFrom(state.messages), pendingIndex ?? SCRIPT.length);
+  const locked = state.active && !state.owner;
+  const unavailable = !state.configured;
+  const latestEvent = state.events[state.events.length - 1];
+  return <>
+    <button ref={trigger} className={`hb-demo-trigger ${open ? 'hb-demo-trigger-hidden' : ''}`} onClick={show} aria-label="Open the WhatsApp match reporter demonstration" aria-expanded={open} aria-controls="hb-demo-drawer"><ChevronLeft size={19} /><span className="hb-demo-trigger-icon"><Phone size={18} /></span><span>TRY THE LIVE DEMO</span><i /></button>
+    {open && <div className="hb-demo-overlay"><button className="hb-demo-backdrop" aria-label="Close demonstration" onClick={close} tabIndex={-1} /><aside id="hb-demo-drawer" ref={drawer} className="hb-demo-drawer" role="dialog" aria-modal="true" aria-labelledby="hb-demo-title"><div className="hb-demo-drawer-top"><div><p>THE MATCH REPORTER</p><h2 id="hb-demo-title">A chat. A result. All sorted.</h2></div><button className="hb-demo-close" aria-label="Close demonstration" onClick={close}><X size={22} /></button></div><p className="hb-demo-intro">Watch a conversation become a match report. The league table updates as the details come in.</p><div className="hb-demo-controls"><button className="hb-demo-play" disabled={loading || locked || unavailable || (!playing && (working || state.busy)) || (progress >= SCRIPT.length && !playing)} onClick={() => void play()}>{playing ? <Pause size={15} /> : <Play size={15} fill="currentColor" />}{playing ? 'Pause demo' : progress >= SCRIPT.length ? 'Demo complete' : progress > 0 ? 'Continue demo' : 'Play demo'}</button><span>{loading ? 'Connecting…' : locked ? <><Radio size={12} /> Watching live</> : playing ? `Message ${Math.min(progress + 1, SCRIPT.length)} of ${SCRIPT.length}` : progress > 0 ? `${progress} of ${SCRIPT.length} messages` : 'About 2 minutes'}</span></div><div className="hb-demo-phone"><div className="hb-demo-phone-top"><span>9:41</span><span className="hb-demo-island" /><span>▰ ▰ ▰</span></div><header className="hb-demo-chat-header"><ChevronLeft size={23} /><span className="hb-demo-group-avatar">QPR<span>⚽</span></span><div><h3>Queens Pork Rangers</h3><p>Ben, Alfie, Sam, Leo, Match Reporter</p></div><Video size={19} className="hb-demo-header-decoration" /><Phone size={17} className="hb-demo-header-decoration" /><MoreVertical size={19} className="hb-demo-header-decoration" /></header><div className="hb-demo-conversation" ref={history} role="log" aria-label="Demonstration group conversation" aria-live="polite" aria-relevant="additions"><div className="hb-demo-day">TODAY</div><div className="hb-demo-chat-notice"><LockKeyhole size={10} /> This is a fictional group chat for the demonstration. No real WhatsApp messages are sent.</div>{state.messages.length === 0 && !loading && <div className="hb-demo-empty"><span>⚽</span><strong>Full-time. Who’s got the score?</strong><p>Press Play demo or write a message below to start the conversation.</p></div>}{loading && state.messages.length === 0 && <div className="hb-demo-connecting"><LoaderCircle size={18} /> Connecting to the clubhouse…</div>}{state.messages.map(m => { const agent = isAgent(m), info = senderInfo(m.sender), outgoing = !agent && info?.id === 'ben'; const date = new Date(m.createdAt); return <article key={m.id} className={`hb-demo-bubble ${outgoing ? 'hb-demo-outgoing' : ''} ${agent ? 'hb-demo-agent' : ''}`}><div className="hb-demo-sender" style={{ color: agent ? '#d8bd76' : info?.color || '#a3d5c2' }}>{agent ? <><Bot size={11} /> Match Reporter</> : info?.label || m.sender}</div><p>{m.text}</p><div className="hb-demo-message-time"><time dateTime={m.createdAt}>{isNaN(date.getTime()) ? '' : date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time>{outgoing && <CheckCheck size={13} />}</div></article>; })}{(working || state.busy) && <div className="hb-demo-typing" role="status"><Bot size={12} /><span>Match Reporter is reading</span><i /><i /><i /></div>}</div><div className="hb-demo-sender-select"><label htmlFor="hb-demo-sender">Send as</label><select id="hb-demo-sender" value={sender} onChange={e => setSender(e.target.value)} disabled={locked || working || playing}>{senders.map(s => <option key={s.id} value={s.id}>{s.label} · {s.team}</option>)}</select><ChevronDown size={12} /></div><form className="hb-demo-composer" onSubmit={send}><div><Smile size={19} aria-hidden="true" /><input aria-label="Message the group" value={message} onChange={e => setMessage(e.target.value)} placeholder={locked ? 'Watching another demo…' : 'Type a message'} maxLength={600} disabled={locked || unavailable || working || playing || state.busy} /><Paperclip size={18} aria-hidden="true" /></div><button type="submit" aria-label="Send message" disabled={!message.trim() || locked || unavailable || working || playing || state.busy}><Send size={18} /></button></form><div className="hb-demo-phone-bottom"><span /></div></div>{error && <div className="hb-demo-error" role="alert"><AlertCircle size={15} /><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError('')}><X size={14} /></button></div>}{unavailable && <div className="hb-demo-error" role="status"><AlertCircle size={15} /><span>The match reporter is not configured yet. The website and manual admin editing remain available.</span></div>}{locked && <p className="hb-demo-watch-note">Someone else has the controls. Their conversation is shared here in real time.</p>}{state.match && state.match.homeScore !== null && state.match.awayScore !== null && <section className="hb-demo-live-result" aria-label="Saved match result" aria-live="polite"><p><span />SAVED TO THE WEBSITE</p><div><span>{state.match.homeName}</span><strong>{state.match.homeScore}<i>–</i>{state.match.awayScore}</strong><span>{state.match.awayName}</span></div><footer><span>League points <b>{state.match.homePoints ?? '—'} / {state.match.awayPoints ?? '—'}</b></span><span>{state.match.shootoutWinnerName ? `${state.match.shootoutWinnerName} won shootout` : 'Shootout pending'}</span></footer></section>}<section className="hb-demo-activity"><button className="hb-demo-activity-toggle" onClick={() => setShowLog(v => !v)} aria-expanded={showLog} aria-controls="hb-demo-log"><span className={`hb-demo-activity-dot ${working || state.busy ? 'is-working' : ''}`} /><span>{working || state.busy ? 'Reading the chat and updating the report…' : latestEvent?.label || 'Ready to update the league'}</span><ChevronRight className={showLog ? 'is-open' : ''} size={16} /></button>{showLog && <div className="hb-demo-log" id="hb-demo-log"><p>The agent calls the league’s MCP tools to read and update match details.</p>{state.events.length === 0 ? <small>Tool activity appears here as the demo runs.</small> : [...state.events].reverse().map(event => <details key={event.id}><summary><span>{event.label}</span><small>{event.status}</small></summary>{event.tool && <p>Tool: {event.tool}</p>}{event.arguments !== undefined && <><b>Request</b><pre>{JSON.stringify(event.arguments, null, 2)?.slice(0, 12000)}</pre></>}{event.result !== undefined && <><b>Response</b><pre>{JSON.stringify(event.result, null, 2)?.slice(0, 12000)}</pre></>}</details>)}</div>}</section><footer className="hb-demo-footer"><p>Fictional season · shared live demonstration</p><div>{state.owner && state.active && <button disabled={working || state.busy} onClick={() => void release()}>Release controls</button>}<Link href="/admin">Admin & reset</Link></div></footer></aside></div>}
+  </>;
+}
