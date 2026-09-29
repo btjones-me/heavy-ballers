@@ -118,10 +118,10 @@ export async function receiveMessage(request:Request){
 async function respond(message:ChatEvent,origin:string,owner:string){
  const callMcp=<T=unknown>(method:string,params:unknown,notification=false)=>rpc<T>(origin,method,params,notification,message.messageId);
  const env=runtimeEnv();if(!env.OPENAI_API_KEY)throw new AppError('The AI connection has not been configured yet.',503);
- // Default list pricing is doubled in GBP, deliberately overestimating USD costs.
- const model=String(env.OPENAI_MODEL??'gpt-5-mini');
- const inputRate=Number(env.OPENAI_INPUT_MICRO_GBP_PER_TOKEN??(model==='gpt-5-mini'?0.5:NaN));
- const outputRate=Number(env.OPENAI_OUTPUT_MICRO_GBP_PER_TOKEN??(model==='gpt-5-mini'?4:NaN));
+ // Conservative GBP rates cover twice the numerical USD cache-write/input and output prices.
+ const model=String(env.OPENAI_MODEL??'gpt-6-luna');
+ const inputRate=Number(env.OPENAI_INPUT_MICRO_GBP_PER_TOKEN??(model==='gpt-6-luna'?0.25:NaN));
+ const outputRate=Number(env.OPENAI_OUTPUT_MICRO_GBP_PER_TOKEN??(model==='gpt-6-luna'?1:NaN));
  if(!Number.isFinite(inputRate)||!Number.isFinite(outputRate)||inputRate<=0||outputRate<=0)throw new AppError('This model needs a valid conservative cost profile before the demo can run.',503,'INVALID_COST_PROFILE');
  const reservation=Math.max(RESERVATION,Math.ceil(6*(24000*inputRate+1200*outputRate)));
  if(reservation>MONTH_LIMIT)throw new AppError('This model’s maximum request cost exceeds the monthly allowance.',503,'INVALID_COST_PROFILE');
@@ -142,7 +142,7 @@ async function respond(message:ChatEvent,origin:string,owner:string){
  const input:Record<string,unknown>[]=[{role:'user',content:JSON.stringify(history.map(h=>({sender:h.sender,role:h.role,text:h.text})))}];
  let wrote=false;
   for(let step=0;step<6;step++){
-   const request={model,instructions:prompt,input,tools,parallel_tool_calls:false,max_output_tokens:1200,reasoning:{effort:'minimal'},store:false};
+   const request={model,instructions:prompt,input,tools,parallel_tool_calls:false,max_output_tokens:1200,reasoning:{effort:'low'},service_tier:'default',store:false};
    if(new TextEncoder().encode(JSON.stringify(request)).byteLength>24_000)throw new AppError('This conversation is too long for a safe demo request. An admin can reset the demo.',400);
    uncertain=true;
    const aiTrace=await startTrace({kind:'ai',method:'POST /v1/responses',endpoint:'OpenAI Responses API',arguments:{model,max_output_tokens:1200,tools:tools.map(t=>t.name),messageId:message.messageId},runId:message.messageId});

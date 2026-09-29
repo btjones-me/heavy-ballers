@@ -205,7 +205,10 @@ test('agent tool loop calls HTTP MCP, persists a result and reconciles cost once
   assert.equal(started.owner, true); assert.equal(started.messages.length, 1);
   await assert.rejects(api.startDemo(demoRequest('start')), { code: 'DEMO_TAKEN' });
   let calls = 0;
-  await withProvider(() => {
+  await withProvider(request => {
+    assert.equal(request.model, 'gpt-6-luna');
+    assert.equal(request.reasoning.effort, 'low');
+    assert.equal(request.service_tier, 'default');
     calls++;
     if (calls === 1) return providerResult([{ type: 'function_call', call_id: 'read-match', name: 'get_match_report', arguments: JSON.stringify({ fixtureId: 'demo-gw7-1' }) }]);
     if (calls === 2) return providerResult([{ type: 'function_call', call_id: 'write-match', name: 'update_match_report', arguments: JSON.stringify({ fixtureId: 'demo-gw7-1', expectedVersion: 0, operationId: 'will-be-overridden', patch: { homeScore: 4, awayScore: 2 } }) }]);
@@ -215,7 +218,7 @@ test('agent tool loop calls HTTP MCP, persists a result and reconciles cost once
     await api.receiveMessage(demoRequest('message', started.token, message));
     assert.equal((await api.receiveMessage(demoRequest('message', started.token, message))).duplicate, true);
   });
-  assert.equal(calls, 3); assert.equal(getUsage().reserved, 0); assert.equal(getUsage().spent, 390);
+  assert.equal(calls, 3); assert.equal(getUsage().reserved, 0); assert.equal(getUsage().spent, 135);
   assert.equal((await api.getBootstrap()).fixtures.find(match => match.id === 'demo-gw7-1').homeScore, 4);
   assert.equal(database.prepare('SELECT COUNT(*) AS n FROM messages WHERE id=?').get('agent-flow-0001').n, 1);
 });
@@ -228,7 +231,7 @@ test('uncertain provider failure charges reservation and same-message retry can 
   assert.equal(getUsage().spent, 125000); assert.equal(getUsage().reserved, 0);
   assert.equal(database.prepare("SELECT COUNT(*) AS n FROM kv WHERE key='demo:busy'").get().n, 0);
   await withProvider(providerText, async () => { await api.receiveMessage(demoRequest('message', started.token, message)); });
-  assert.equal(getUsage().spent, 125130);
+  assert.equal(getUsage().spent, 125045);
   assert.equal(database.prepare('SELECT COUNT(*) AS n FROM messages WHERE id=?').get(message.messageId).n, 1);
   assert.equal(database.prepare('SELECT value FROM kv WHERE key=?').get(`demo:message:${message.messageId}`).value, 'done');
 });
@@ -246,7 +249,7 @@ test('pending duplicate is busy, admin reset cannot interrupt an active message,
     await assert.rejects(api.resetDemo(), { code: 'DEMO_BUSY' });
     release(); await pending;
   });
-  assert.equal(getUsage().spent, 130); assert.equal(getUsage().reserved, 0);
+  assert.equal(getUsage().spent, 45); assert.equal(getUsage().reserved, 0);
 });
 
 test('monthly cap refuses provider work before spending and known rejection does not charge the full reserve', async () => {

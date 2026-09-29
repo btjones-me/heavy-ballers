@@ -7,7 +7,7 @@ import './architecture.css';
 const stack = [
   { icon: Code2, title: 'The website', name: 'React · TypeScript · Vinext', description: 'Next.js App Router conventions, compiled for a Cloudflare Worker. The same interface serves visitors and the password-protected admin.' },
   { icon: Layers3, title: 'The backend', name: 'Cloudflare Worker · Sites', description: 'Server-side routes run the chat agent, protect credentials and validate changes through one shared league service.' },
-  { icon: MessageSquare, title: 'The match reporter', name: 'OpenAI GPT-5 mini · HTTP MCP', description: 'The model reads the conversation and selects MCP tools. A separate server-held credential protects the tools that find fixtures, read squads and update results.' },
+  { icon: MessageSquare, title: 'The match reporter', name: 'OpenAI GPT-6 Luna · HTTP MCP', description: 'The model reads the conversation and selects MCP tools. A separate server-held credential protects the tools that find fixtures, read squads and update results.' },
   { icon: Database, title: 'League records', name: 'Cloudflare D1', description: 'Teams, players, fixtures, match reports and change history live in a relational database. Tables and scorer rankings are calculated from saved results.' },
   { icon: ImageIcon, title: 'Photography', name: 'Cloudflare R2', description: 'Admin uploads are stored separately from league data and served back to the website.' },
 ];
@@ -71,8 +71,8 @@ export default function ArchitecturePanel() {
         <div className="hb-architecture-content">
           <p className="hb-architecture-intro">A small website with a real backend. Here’s how the live demo reads a match report and turns it into an updated season.</p>
           <figure className="hb-architecture-figure">
-            <a href="/assets/architecture-stack.png" target="_blank" rel="noopener noreferrer" aria-label="Open architecture diagram at full size in a new tab">
-              <img src="/assets/architecture-stack.png" alt="Heavy Ballers architecture: the chat demo sends messages to a Worker-hosted OpenAI agent; authenticated MCP tools call the shared league service and D1 database. Admin uses the same service, R2 stores photos, and the website refreshes saved results." />
+            <a href="/assets/architecture-stack-luna.png" target="_blank" rel="noopener noreferrer" aria-label="Open architecture diagram at full size in a new tab">
+              <img src="/assets/architecture-stack-luna.png" alt="Heavy Ballers architecture: the chat demo sends messages to a Worker-hosted OpenAI agent; authenticated MCP tools call the shared league service and D1 database. Admin uses the same service, R2 stores photos, and the website refreshes saved results." />
               <span>Explore the diagram <ArrowUpRight size={14} aria-hidden="true" /></span>
             </a>
             <figcaption>Open the diagram at full size. The same flow is explained below.</figcaption>
@@ -82,7 +82,7 @@ export default function ArchitecturePanel() {
             <h3 id="hb-architecture-flow-title">One report. One source of truth.</h3>
             <ol>
               <li><b>A player reports the result.</b> The fictional chat sends each message to the backend.</li>
-              <li><b>The agent checks the details.</b> GPT-5 mini reads the conversation, uses MCP tools and asks for missing or unclear information.</li>
+              <li><b>The agent checks the details.</b> GPT-6 Luna reads the conversation, uses MCP tools and asks for missing or unclear information.</li>
               <li><b>The league service saves valid changes.</b> Team, player, score and revision checks protect the shared records in D1.</li>
               <li><b>The website catches up.</b> Results, standings and goalscorers refresh automatically every 2.5 seconds.</li>
             </ol>
