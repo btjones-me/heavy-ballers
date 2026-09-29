@@ -16,6 +16,10 @@ Browser → `/api/demo/message` → OpenAI Responses API → function tool selec
 
 One visitor owns a ten-minute renewable demo lease. Other visitors can read the shared conversation. A separate database mutex serializes agent requests and demo resets. Only admin can reset. Expired leases are reclaimable. Refreshing preserves the owning token in session storage. Pausing stops the scripted playback after any already running message finishes.
 
+The demo records real MCP and AI request traces: request summaries, HTTP status, response payloads and elapsed milliseconds. Credentials and internal reasoning are excluded. Running and completed trace entries share an ID so the developer readout shows each call once. The phone flips to this readout before a write, alongside a live view of the result, standings and scorers. That view polls the same public data every 750 ms and highlights changed values.
+
+After validating a proposed update, the agent announces it and creates an expiring presentation gate. Only the current demo owner can acknowledge `/api/demo/present`, after the browser has painted the live baseline and completed the flip. The MCP write waits for that acknowledgement; an unacknowledged gate times out after 18 seconds without sending the write. This presentation handshake belongs to the browser demonstration; standalone MCP clients do not need it.
+
 ## Spend control
 
 The monthly ledger uses integer millionths of GBP, with a cap of 5,000,000 (£5). Each message reserves £0.125 atomically before any provider call. A run allows at most six calls, each with at most 1,200 output tokens and a 24,000-byte complete request. The default GPT-5 mini rate is accounted at £0.50/million input tokens and £4/million output tokens, conservatively twice its numerical USD list price. Cached tokens get no discount in the ledger. Successful calls reconcile against reported token counts; uncertain failed calls consume the reservation. Crashed requests retain their reservation rather than making the budget available again. Demo reset never resets the usage ledger.

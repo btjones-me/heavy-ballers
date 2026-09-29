@@ -17,15 +17,45 @@ type ProviderResponse={output?:ProviderOutput[];usage?:{input_tokens?:number;out
 const token=(r:Request)=>r.headers.get('x-demo-token')??'';
 async function lease(){const row=await first<{value:string}>("SELECT value FROM kv WHERE key='demo:lock'");return row?JSON.parse(row.value):null}
 async function event(type:string,payload:unknown){await run('INSERT INTO events(id,type,payload,createdAt) VALUES(?,?,?,?)',newId(),type,JSON.stringify(payload),now())}
+type Trace={kind:'mcp'|'ai';method:string;endpoint:string;tool?:string;arguments:unknown;runId?:string};
+async function startTrace(trace:Trace){const id=newId();const payload={...trace,traceId:id,label:trace.tool??trace.method,status:'running',httpStatus:null,durationMs:null};await run('INSERT INTO events(id,type,payload,createdAt) VALUES(?,?,?,?)',id,'tool',JSON.stringify(payload),now());return {id,payload,started:Date.now()}}
+async function finishTrace(trace:Awaited<ReturnType<typeof startTrace>>,status:string,httpStatus:number|null,result:unknown){await run('UPDATE events SET payload=? WHERE id=?',JSON.stringify({...trace.payload,status,httpStatus,durationMs:Math.max(0,Date.now()-trace.started),result}),trace.id)}
+function compactMcp(result:unknown):unknown {
+ if(!result||typeof result!=='object')return result;
+ const value=result as Record<string,unknown>;
+ if(Array.isArray(value.tools))return {tools:value.tools.map((tool:Record<string,unknown>)=>({name:tool.name,description:tool.description}))};
+ if(value.structuredContent!==undefined)return {isError:value.isError??false,structuredContent:value.structuredContent};
+ return result;
+}
+export async function acknowledgePresentation(request:Request){
+ assertSameOrigin(request);const current=await lease(),owner=await sha256(token(request));
+ if(!current||current.token!==owner||current.expiresAt<=Date.now())throw new AppError('Only the current demonstrator can prepare the live view.',403,'DEMO_LEASE');
+ const body=await request.json() as {runId?:unknown};if(typeof body.runId!=='string'||body.runId.length>160)throw new AppError('Invalid presentation request.');
+ const accepted=await run("UPDATE kv SET value=json_set(value,'$.ready',1) WHERE key='demo:presentation' AND json_extract(value,'$.runId')=? AND json_extract(value,'$.owner')=? AND json_extract(value,'$.expiresAt')>?",body.runId,owner,Date.now());
+ if(!accepted.meta.changes)throw new AppError('This update is no longer waiting for the live view.',409,'PRESENTATION_EXPIRED');
+ return {ok:true,runId:body.runId};
+}
+export async function preparePresentation(args:unknown,owner:string,timeoutMs=18_000){
+ const runId=newId(),expiresAt=Date.now()+timeoutMs;
+ await append('Heavy Ballers','I’ve got those details. I’m updating the website now — watch the result and league table.');
+ await run("INSERT INTO kv(key,value) VALUES('demo:presentation',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",JSON.stringify({runId,expiresAt,owner,ready:0}));
+ await event('demo',{phase:'preparing_write',runId,label:'Preparing the live website view',status:'running',arguments:args});
+ try{
+  while(Date.now()<expiresAt){const row=await first<{value:string}>("SELECT value FROM kv WHERE key='demo:presentation'");if(row){const gate=JSON.parse(row.value);if(gate.runId===runId&&gate.ready===1)return runId;}await new Promise(resolve=>setTimeout(resolve,200))}
+  throw new AppError('The live result view was not ready, so this update was not sent. Keep the demo open and try the message again.',409,'DEMO_VIEW_NOT_READY');
+ }finally{await run("DELETE FROM kv WHERE key='demo:presentation' AND json_extract(value,'$.runId')=?",runId)}
+}
 async function append(sender:string,text:string,role='assistant'){await run('INSERT INTO messages(id,conversationId,sender,text,createdAt,role) VALUES(?,?,?,?,?,?)',newId(),CONVERSATION,sender,text,now(),role)}
 export async function demoState(request:Request){
+ const presentationRow=await first<{value:string}>("SELECT value FROM kv WHERE key='demo:presentation'"),pending=presentationRow?JSON.parse(presentationRow.value):null;
+ const presentation=pending&&pending.expiresAt>Date.now()?{runId:pending.runId,expiresAt:pending.expiresAt}:null;
  const lock=await lease();const busy=await first<{value:string}>("SELECT value FROM kv WHERE key='demo:busy'");
  const data=await getBootstrap(),fixture=data.fixtures.find(item=>item.id===FIXTURE);
  const rules=data.seasons.find(season=>season.id===fixture?.seasonId)?.rules??{win:3,draw:1,shootout:1};
  const homeScore=fixture?.homeScore??null,awayScore=fixture?.awayScore??null;
  const played=homeScore!==null&&awayScore!==null;
  const match=fixture?{homeName:data.teams.find(team=>team.id===fixture.homeTeamId)?.name??'Queens Pork Rangers',awayName:data.teams.find(team=>team.id===fixture.awayTeamId)?.name??'NetSix and Chill',homeScore,awayScore,shootoutWinnerName:data.teams.find(team=>team.id===fixture.shootoutWinnerId)?.name??null,homePoints:played?(homeScore>awayScore?rules.win:homeScore===awayScore?rules.draw:0)+(fixture.shootoutWinnerId===fixture.homeTeamId?rules.shootout:0):null,awayPoints:played?(awayScore>homeScore?rules.win:homeScore===awayScore?rules.draw:0)+(fixture.shootoutWinnerId===fixture.awayTeamId?rules.shootout:0):null}:undefined;
- return {match,messages:await all<Row>('SELECT * FROM messages WHERE conversationId=? ORDER BY createdAt,id LIMIT 150',CONVERSATION),events:(await all<{id:string;payload:string;createdAt:string}>('SELECT id,payload,createdAt FROM events WHERE type IN (\'ai\',\'tool\',\'demo\') ORDER BY createdAt DESC LIMIT 30')).map(e=>({...e,...JSON.parse(e.payload)})),active:!!lock&&lock.expiresAt>Date.now(),owner:!!lock&&lock.token===await sha256(token(request))&&lock.expiresAt>Date.now(),busy:!!busy&&JSON.parse(busy.value).expiresAt>Date.now(),configured:!!runtimeEnv().OPENAI_API_KEY};
+ return {presentation,match,messages:await all<Row>('SELECT * FROM messages WHERE conversationId=? ORDER BY createdAt,id LIMIT 150',CONVERSATION),events:(await all<{id:string;payload:string;createdAt:string}>('SELECT id,payload,createdAt FROM events WHERE type IN (\'ai\',\'tool\',\'demo\') ORDER BY createdAt DESC,id DESC LIMIT 80')).map(e=>({...e,...JSON.parse(e.payload)})),active:!!lock&&lock.expiresAt>Date.now(),owner:!!lock&&lock.token===await sha256(token(request))&&lock.expiresAt>Date.now(),busy:!!busy&&JSON.parse(busy.value).expiresAt>Date.now(),configured:!!runtimeEnv().OPENAI_API_KEY};
 }
 export async function startDemo(request:Request){
  assertSameOrigin(request);await rateLimit('demo:start:'+await sha256(request.headers.get('cf-connecting-ip')??'local'),10,600);
@@ -39,13 +69,20 @@ export async function startDemo(request:Request){
 }
 export async function releaseDemo(request:Request){assertSameOrigin(request);await run("DELETE FROM kv WHERE key='demo:lock' AND json_extract(value,'$.token')=?",await sha256(token(request)));return {ok:true}}
 
-async function rpc<T=unknown>(origin:string,method:string,params:unknown,notification=false):Promise<T>{
- let response:Response;
- try{response=await fetch(new URL('/api/mcp',origin),{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+runtimeEnv().MCP_TOKEN,'MCP-Protocol-Version':'2025-03-26'},body:JSON.stringify({jsonrpc:'2.0',...(notification?{}:{id:newId()}),method,params}),signal:AbortSignal.timeout(15_000)});}catch(e){throw connectionFailure('match-report service',e)}
- if(!response.ok)throw new AppError([401,403].includes(response.status)?'The match-report service refused access. Ask the site admin to check the server’s MCP credential.':`The match-report service returned HTTP ${response.status}. Try again shortly; if it persists, ask the site admin to check the service.`,503,'MCP_UNAVAILABLE');
- if(response.status===202)return undefined as T;
- const body=await response.json() as {result:T;error?:{message:string}};
- if(body.error)throw new AppError('The match-report service could not complete its request. Check the saved result and retry; if it persists, ask the site admin to check the service.',503,'MCP_REQUEST_FAILED');return body.result;
+async function rpc<T=unknown>(origin:string,method:string,params:unknown,notification=false,runId?:string):Promise<T>{
+ const tool=method==='tools/call'?(params as {name:string}).name:undefined;
+ const trace=await startTrace({kind:'mcp',method,endpoint:'/api/mcp',tool,arguments:params,runId});
+ let httpStatus:number|null=null,recorded=false;
+ try{
+  let response:Response;
+  try{response=await fetch(new URL('/api/mcp',origin),{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+runtimeEnv().MCP_TOKEN,'MCP-Protocol-Version':'2025-03-26'},body:JSON.stringify({jsonrpc:'2.0',...(notification?{}:{id:newId()}),method,params}),signal:AbortSignal.timeout(15_000)});}catch(e){throw connectionFailure('match-report service',e)}
+  httpStatus=response.status;
+  if(!response.ok)throw new AppError([401,403].includes(response.status)?'The match-report service refused access. Ask the site admin to check the server’s MCP credential.':`The match-report service returned HTTP ${response.status}. Try again shortly; if it persists, ask the site admin to check the service.`,503,'MCP_UNAVAILABLE');
+  if(response.status===202){await finishTrace(trace,'success',httpStatus,{acknowledged:true});return undefined as T;}
+  const body=await response.json() as {result:T;error?:{code?:number;message:string}};
+  if(body.error){await finishTrace(trace,'error',httpStatus,{error:{code:body.error.code,message:'MCP request rejected'}});recorded=true;throw new AppError('The match-report service could not complete its request. Check the saved result and retry.',503,'MCP_REQUEST_FAILED')}
+  await finishTrace(trace,(body.result as {isError?:boolean})?.isError?'error':'success',httpStatus,compactMcp(body.result));return body.result;
+ }catch(e){if(!recorded)await finishTrace(trace,'error',httpStatus,{code:e instanceof AppError?e.code:'MCP_RESPONSE_ERROR',message:e instanceof AppError?e.message:'The match-report service returned an unreadable response.'});throw e;}
 }
 
 export async function receiveMessage(request:Request){
@@ -73,12 +110,13 @@ export async function receiveMessage(request:Request){
   await run("UPDATE kv SET value=json_set(value,'$.expiresAt',?) WHERE key='demo:lock' AND json_extract(value,'$.token')=?",Date.now()+600_000,await sha256(token(request)));
   const origin=String(runtimeEnv().APP_ORIGIN??'');
   if(!/^https?:\/\//.test(origin))throw new AppError('The demo connection origin is not configured.',503);
-  try{await respond(input,origin);await run('UPDATE kv SET value=? WHERE key=?','done',statusKey)}catch(e){await run('UPDATE kv SET value=? WHERE key=?','failed',statusKey);await append('Heavy Ballers',e instanceof AppError?e.message:'The agent could not finish that report. The website is safe to keep using. Please try your message again.');await event('ai',{label:'Agent paused',status:'error',result:{code:e instanceof AppError?e.code:'AGENT_FAILED',message:e instanceof AppError?e.message:'The report could not be completed. Check the saved result before retrying.'}});throw e}
+  try{await respond(input,origin,lock.token);await run('UPDATE kv SET value=? WHERE key=?','done',statusKey)}catch(e){await run('UPDATE kv SET value=? WHERE key=?','failed',statusKey);await append('Heavy Ballers',e instanceof AppError?e.message:'The agent could not finish that report. The website is safe to keep using. Please try your message again.');await event('ai',{label:'Agent paused',status:'error',result:{code:e instanceof AppError?e.code:'AGENT_FAILED',message:e instanceof AppError?e.message:'The report could not be completed. Check the saved result before retrying.'}});throw e}
   return {ok:true};
  }finally{await run("DELETE FROM kv WHERE key='demo:busy' AND value=?",busy)}
 }
 
-async function respond(message:ChatEvent,origin:string){
+async function respond(message:ChatEvent,origin:string,owner:string){
+ const callMcp=<T=unknown>(method:string,params:unknown,notification=false)=>rpc<T>(origin,method,params,notification,message.messageId);
  const env=runtimeEnv();if(!env.OPENAI_API_KEY)throw new AppError('The AI connection has not been configured yet.',503);
  // Default list pricing is doubled in GBP, deliberately overestimating USD costs.
  const model=String(env.OPENAI_MODEL??'gpt-5-mini');
@@ -92,9 +130,9 @@ async function respond(message:ChatEvent,origin:string){
  if(!reserve.meta.changes)throw new AppError('The £5 monthly AI allowance is used up. Results can still be edited in admin.',429,'AI_BUDGET');
  let cost=0,uncertain=false;
  try{
-  await rpc(origin,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'heavy-ballers-demo-agent',version:'1.0.0'}});
-  await rpc(origin,'notifications/initialized',{},true);
-  const discovered=await rpc<{tools:McpTool[]}>(origin,'tools/list',{});
+  await callMcp('initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'heavy-ballers-demo-agent',version:'1.0.0'}});
+  await callMcp('notifications/initialized',{},true);
+  const discovered=await callMcp<{tools:McpTool[]}>('tools/list',{});
   const toolNames=['find_fixtures','get_squad','get_match_report','update_match_report'];
   const tools=discovered.tools.filter(t=>toolNames.includes(t.name)).map(t=>({type:'function',name:t.name,description:t.description,parameters:t.inputSchema,strict:false}));
   const history=await all<Row>('SELECT * FROM messages WHERE conversationId=? ORDER BY createdAt DESC LIMIT 18',CONVERSATION);history.reverse();
@@ -107,10 +145,13 @@ async function respond(message:ChatEvent,origin:string){
    const request={model,instructions:prompt,input,tools,parallel_tool_calls:false,max_output_tokens:1200,reasoning:{effort:'minimal'},store:false};
    if(new TextEncoder().encode(JSON.stringify(request)).byteLength>24_000)throw new AppError('This conversation is too long for a safe demo request. An admin can reset the demo.',400);
    uncertain=true;
+   const aiTrace=await startTrace({kind:'ai',method:'POST /v1/responses',endpoint:'OpenAI Responses API',arguments:{model,max_output_tokens:1200,tools:tools.map(t=>t.name),messageId:message.messageId},runId:message.messageId});
    let response:Response;
-   try{response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:'Bearer '+env.OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(30_000)});}catch(e){throw connectionFailure('AI provider',e)}
-   if(!response.ok){if(response.status<500)uncertain=false;const failure=await providerFailure(response);await event('ai',{label:'AI provider request failed',status:'error',providerStatus:response.status,code:failure.code,result:{message:failure.message}});throw failure}
-   const result=await response.json() as ProviderResponse;
+   try{response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:'Bearer '+env.OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(30_000)});}catch(e){const failure=connectionFailure('AI provider',e);await finishTrace(aiTrace,'error',null,{code:failure.code,message:failure.message});throw failure}
+   if(!response.ok){if(response.status<500)uncertain=false;const failure=await providerFailure(response);await finishTrace(aiTrace,'error',response.status,{code:failure.code,message:failure.message});await event('ai',{label:'AI provider request failed',status:'error',providerStatus:response.status,code:failure.code,result:{message:failure.message}});throw failure}
+   let result:ProviderResponse;
+   try{result=await response.json() as ProviderResponse;}catch{await finishTrace(aiTrace,'error',response.status,{code:'AI_RESPONSE_ERROR',message:'Unreadable AI response'});throw new AppError('The AI provider returned an unreadable response. Please try again.',503,'AI_RESPONSE_ERROR')}
+   await finishTrace(aiTrace,'success',response.status,{usage:result.usage,output:(result.output??[]).filter(o=>o.type==='function_call'||o.type==='message').map(o=>o.type==='function_call'?{type:o.type,name:o.name,arguments:o.arguments}:{type:o.type,content:o.content})});
    if(result.usage){cost+=Math.ceil((result.usage.input_tokens??0)*inputRate+(result.usage.output_tokens??0)*outputRate);uncertain=false}
    const calls=(result.output??[]).filter(o=>o.type==='function_call');
    input.push(...(result.output??[]));
@@ -120,7 +161,7 @@ async function respond(message:ChatEvent,origin:string){
     const args=JSON.parse(call.arguments) as Record<string,unknown>;
     if(call.name==='update_match_report'){
      args.fixtureId=FIXTURE;args.operationId=`ai:${message.messageId}:${call.call_id}`;
-     const current=await rpc<McpResult>(origin,'tools/call',{name:'get_match_report',arguments:{fixtureId:FIXTURE}});
+     const current=await callMcp<McpResult>('tools/call',{name:'get_match_report',arguments:{fixtureId:FIXTURE}});
      if(current.isError||!current.structuredContent)throw new AppError('I could not check the current match. Please try again.',503,'MCP_UNAVAILABLE');
      if(!args.patch||typeof args.patch!=='object'||Array.isArray(args.patch))throw new AppError('The agent returned an invalid match update.',400);
      const report=current.structuredContent as ReportContext,proposed=args.patch as FixturePatch;
@@ -133,7 +174,8 @@ async function respond(message:ChatEvent,origin:string){
      const decision=guardMatchReport(report,proposed,{text:message.text,senderName:SENDERS[message.senderId].name,teamId:SENDERS[message.senderId].teamId},previousEvidence);
      if(!decision.ok){await append('Heavy Ballers',decision.message);await event('tool',{label:'Report needs clarification',status:'error',tool:call.name,arguments:args,result:{isError:true,code:decision.code,message:decision.message}});return}
     }
-    const output=await rpc<McpResult>(origin,'tools/call',{name:call.name,arguments:args});
+    if(call.name==='update_match_report')await preparePresentation(args,owner);
+    const output=await callMcp<McpResult>('tools/call',{name:call.name,arguments:args});
     if(call.name==='update_match_report'&&!output.isError)wrote=true;
     const patch=args.patch as FixturePatch|undefined;
     let label=call.name==='update_match_report'?(patch?.shootoutWinnerId?'Shootout point added':patch?.homeScore!==undefined||patch?.awayScore!==undefined?'Score saved':'Goalscorers saved'):'Read match information';

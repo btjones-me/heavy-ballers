@@ -37,3 +37,5 @@ Uploading a photograph stores the file; it does not change the public site until
 **Overview → Reset demo** restores the fictional season's original squads and results and clears the demo conversation. This replaces any edits made to the fictional season. It preserves real seasons, enquiries, website content, uploaded files, change history and the AI usage allowance. A confirmation explains the operation before it runs.
 
 The shared demo runs one conversation at a time. Wait for an in-progress agent message to finish before resetting.
+
+When the reporter has a valid update, it announces the save and the phone flips to **Agent activity**. The website result and standings appear alongside it before the change is sent. The developer view shows actual MCP/AI calls, JSON summaries, HTTP response codes and measured milliseconds; changed website values glow gold. Use **Group chat** to flip back. Keep the demo open during a save: if its live view cannot load, the update is paused rather than written out of sight.

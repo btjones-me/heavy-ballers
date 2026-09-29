@@ -64,3 +64,9 @@ Published at https://heavy-ballers-demo.btjones-me.chatgpt.site on 29 September 
 - After public acceptance, the admin reset restored round seven to unreported, emptied the fictional conversation and released its lease. Historical fixture records were compared before/after and were unchanged. The AI ledger was retained: September spend 21,130 micro-GBP (£0.02113), with no outstanding reservations at that point.
 
 Local ignored `qa/` artifacts retain the public screenshot and concise result/admin/reset evidence. The public demo is ready to replay; later visitors may change its shared state.
+
+## Developer readout and navigation update
+
+- All 32 automated tests pass. New cases prove that the MCP write is withheld until the current owner acknowledges the painted live view, stale and non-owner acknowledgements fail, an unacknowledged view times out without changing the result, and developer traces preserve HTTP status, JSON-RPC error codes and measured durations without credentials.
+- A real local browser run displayed the automatic chat-to-activity flip, the live result view and gold change highlights. Score, both teams' fragmented scorer reports and the shootout saved correctly, ending at Queens 4–2 NetSix, with three and one league points respectively. MCP traces displayed real HTTP 200 results and a 202 notification acknowledgement, with measured millisecond timings.
+- Local Chrome navigation checks clicked Tuesday/Saturday Teams, Tuesday/Saturday Tables and Scores & fixtures. Each changed the URL and rendered the correct content. Outside click, mutually exclusive dropdowns and Escape dismissal passed. Mobile Tables → Saturday at 390×844 navigated correctly and closed the menu. Public links use native navigation to avoid the observed Vinext client-router interception issue.

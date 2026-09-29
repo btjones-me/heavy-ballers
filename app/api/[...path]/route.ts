@@ -2,7 +2,7 @@ import {ensureSeed,runtimeEnv} from '../../../lib/db';
 import {getBootstrap} from '../../../lib/league';
 import {adminState,saveRecord,undoChange,resetDemo,submitEnquiry} from '../../../lib/admin-service';
 import {login,logout,requireAdmin,assertSameOrigin} from '../../../lib/auth';
-import {demoState,startDemo,receiveMessage,releaseDemo} from '../../../lib/agent';
+import {demoState,startDemo,receiveMessage,releaseDemo,acknowledgePresentation} from '../../../lib/agent';
 import {AppError} from '../../../lib/types';
 import {handleMcp} from '../../../lib/mcp';
 
@@ -17,6 +17,7 @@ async function route(request:Request){
   if(path==='contact'&&post){assertSameOrigin(request);return json(await submitEnquiry(await request.json(),request.headers.get('cf-connecting-ip')??'local'))}
   if(path==='demo/state'&&!post)return json(await demoState(request));
   if(path==='demo/start'&&post)return json(await startDemo(request));
+  if(path==='demo/present'&&post)return json(await acknowledgePresentation(request));
   if(path==='demo/message'&&post)return json(await receiveMessage(request));
   if(path==='demo/release'&&post)return json(await releaseDemo(request));
   if(path==='admin/login'&&post)return await login(request);

@@ -184,7 +184,9 @@ const demoRequest = (action, token, body = {}) => new Request(`https://ballers.t
 const chatMessage = (messageId, text = 'We won 4–2') => ({ messageId, text, conversationId: 'queens-pork-demo', fixtureId: 'demo-gw7-1', senderId: 'ben', timestamp: new Date().toISOString() });
 const providerResult = output => Response.json({ output, usage: { input_tokens: 100, output_tokens: 20 } });
 const providerText = () => providerResult([{ type: 'message', content: [{ type: 'output_text', text: 'Result received.' }] }]);
-async function withProvider(handler, task, onRpc = () => {}) {
+async function withProvider(handler, task, onRpc = () => {}, autoPresent = true) {
+  // Existing agent tests simulate a painted live view; gate-specific tests use the real acknowledgement endpoint.
+  const presentationTimer = autoPresent ? setInterval(() => database.prepare("UPDATE kv SET value=json_set(value,'$.ready',1) WHERE key='demo:presentation'").run(), 10) : null;
   const original = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     const target = new URL(url);
@@ -192,7 +194,7 @@ async function withProvider(handler, task, onRpc = () => {}) {
     assert.equal(target.href, 'https://api.openai.com/v1/responses');
     return handler(JSON.parse(options.body));
   };
-  try { await task(); } finally { globalThis.fetch = original; }
+  try { await task(); } finally { globalThis.fetch = original; if (presentationTimer) clearInterval(presentationTimer); }
 }
 function setUsage(spent = 0, reserved = 0) { database.prepare('INSERT INTO usage(month,spent,reserved) VALUES(?,?,?) ON CONFLICT(month) DO UPDATE SET spent=excluded.spent,reserved=excluded.reserved').run(new Date().toISOString().slice(0, 7), spent, reserved); }
 function getUsage() { return database.prepare('SELECT spent,reserved FROM usage WHERE month=?').get(new Date().toISOString().slice(0, 7)); }
@@ -383,4 +385,50 @@ test('provider failures distinguish credit, credentials, throttling and service 
   }
   assert.equal((await api.providerFailure(new Response('<html>unavailable</html>', { status: 502 }))).code, 'AI_UNAVAILABLE');
   assert.match(api.connectionFailure('AI provider', {name: 'TimeoutError'}).message, /Some details may already be saved/);
+});
+
+
+test('agent announces an update and waits for the owner live-view acknowledgement before MCP writes', async () => {
+  await api.resetDemo(); setUsage(); database.prepare("DELETE FROM rate_limits WHERE key LIKE 'demo:%'").run();
+  const started = await api.startDemo(demoRequest('start'));
+  let calls = 0, writes = 0;
+  await withProvider(() => ++calls === 1 ? providerResult([{type:'function_call',call_id:'gated',name:'update_match_report',arguments:JSON.stringify({expectedVersion:0,patch:{homeScore:4,awayScore:2}})}]) : providerText(), async () => {
+    const pending = api.receiveMessage(demoRequest('message', started.token, chatMessage('presentation-0001')));
+    let state;
+    for(let attempt=0;attempt<100;attempt++) { state=await api.demoState(new Request('https://ballers.test/api/demo/state')); if(state.presentation) break; await new Promise(resolve=>setTimeout(resolve,10)); }
+    assert.ok(state.presentation); assert.equal(writes,0); assert.equal(state.match.homeScore,null);
+    assert.ok(state.messages.some(message=>message.text.includes('updating the website now')));
+    await assert.rejects(api.acknowledgePresentation(demoRequest('present','wrong-token',{runId:state.presentation.runId})),{code:'DEMO_LEASE'});
+    await assert.rejects(api.acknowledgePresentation(demoRequest('present',started.token,{runId:'stale-run'})),{code:'PRESENTATION_EXPIRED'});
+    assert.equal(writes,0);
+    await api.acknowledgePresentation(demoRequest('present',started.token,{runId:state.presentation.runId}));
+    await pending;
+  }, request=>{if(request.params?.name==='update_match_report')writes++}, false);
+  assert.equal(writes,1);
+  const state=await api.demoState(new Request('https://ballers.test/api/demo/state'));
+  assert.equal(state.presentation,null);assert.equal(state.match.homeScore,4);
+  const trace=state.events.find(event=>event.traceId&&event.tool==='update_match_report');
+  assert.equal(trace.httpStatus,200);assert.equal(trace.status,'success');assert.ok(trace.durationMs>=0);
+  assert.equal(trace.arguments.arguments.patch.homeScore,4);
+  assert.equal(trace.result.structuredContent.fixture.homeScore,4);
+  assert.doesNotMatch(JSON.stringify(state.events), /test-only-mcp-token|test-key-not-real|Authorization/);
+});
+
+test('unacknowledged presentation times out safely and leaves the fixture unchanged',async()=>{
+  await api.resetDemo();
+  await assert.rejects(api.preparePresentation({patch:{homeScore:9,awayScore:0}},'owner-hash',30),{code:'DEMO_VIEW_NOT_READY'});
+  assert.equal((await api.getBootstrap()).fixtures.find(f=>f.id==='demo-gw7-1').homeScore,null);
+  assert.equal(database.prepare("SELECT value FROM kv WHERE key='demo:presentation'").get(),undefined);
+});
+
+
+test('MCP protocol failure preserves HTTP status and JSON-RPC code in the developer trace',async()=>{
+  await api.resetDemo();setUsage();database.prepare("DELETE FROM rate_limits WHERE key LIKE 'demo:%'").run();
+  const started=await api.startDemo(demoRequest('start'));const savedFetch=globalThis.fetch;
+  globalThis.fetch=async()=>Response.json({jsonrpc:'2.0',id:1,error:{code:-32602,message:'upstream private diagnostic'}});
+  try{await assert.rejects(api.receiveMessage(demoRequest('message',started.token,chatMessage('protocol-error-0001'))),{code:'MCP_REQUEST_FAILED'});}finally{globalThis.fetch=savedFetch}
+  const state=await api.demoState(new Request('https://ballers.test/api/demo/state'));
+  const trace=state.events.find(event=>event.traceId);
+  assert.equal(trace.httpStatus,200);assert.equal(trace.status,'error');assert.equal(trace.result.error.code,-32602);
+  assert.doesNotMatch(JSON.stringify(trace),/upstream private diagnostic/);
 });
