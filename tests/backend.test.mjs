@@ -36,7 +36,7 @@ before(async () => {
   globalThis.__HB_TEST_ENV = { DB: db, ADMIN_PASSWORD: 'test-only-password', MCP_TOKEN: 'test-only-mcp-token', OPENAI_API_KEY: 'test-key-not-real', APP_ORIGIN: 'https://ballers.test' };
   temporary = await mkdtemp(join(tmpdir(), 'heavy-ballers-tests-'));
   const outfile = join(temporary, 'backend.mjs');
-  await build({ stdin: { contents: `export * from './lib/league'; export * from './lib/admin-service'; export * from './lib/auth'; export * from './lib/mcp'; export * from './lib/agent'; export * from './lib/report-guard';`, resolveDir: process.cwd() }, bundle: true, outfile, platform: 'node', format: 'esm', plugins: [{ name: 'test-cloudflare-binding', setup(build) { build.onResolve({ filter: /^cloudflare:workers$/ }, args => ({ path: args.path, namespace: 'test-runtime' })); build.onLoad({ filter: /.*/, namespace: 'test-runtime' }, () => ({ contents: 'export const env = globalThis.__HB_TEST_ENV;' })); } }] });
+  await build({ stdin: { contents: `export * from './lib/league'; export * from './lib/admin-service'; export * from './lib/auth'; export * from './lib/mcp'; export * from './lib/agent'; export * from './lib/report-guard'; export * from './lib/demo-errors';`, resolveDir: process.cwd() }, bundle: true, outfile, platform: 'node', format: 'esm', plugins: [{ name: 'test-cloudflare-binding', setup(build) { build.onResolve({ filter: /^cloudflare:workers$/ }, args => ({ path: args.path, namespace: 'test-runtime' })); build.onLoad({ filter: /.*/, namespace: 'test-runtime' }, () => ({ contents: 'export const env = globalThis.__HB_TEST_ENV;' })); } }] });
   api = await import(pathToFileURL(outfile).href);
 });
 after(async () => { database?.close(); if (temporary) await rm(temporary, { recursive: true }); delete globalThis.__HB_TEST_ENV; });
@@ -222,7 +222,7 @@ test('uncertain provider failure charges reservation and same-message retry can 
   await api.resetDemo(); setUsage();
   const started = await api.startDemo(demoRequest('start'));
   const message = chatMessage('agent-retry-0001');
-  await withProvider(() => { throw new TypeError('simulated network loss'); }, async () => { await assert.rejects(api.receiveMessage(demoRequest('message', started.token, message)), /simulated network loss/); });
+  await withProvider(() => { throw new TypeError('simulated network loss'); }, async () => { await assert.rejects(api.receiveMessage(demoRequest('message', started.token, message)), /could not connect to the AI provider/); });
   assert.equal(getUsage().spent, 125000); assert.equal(getUsage().reserved, 0);
   assert.equal(database.prepare("SELECT COUNT(*) AS n FROM kv WHERE key='demo:busy'").get().n, 0);
   await withProvider(providerText, async () => { await api.receiveMessage(demoRequest('message', started.token, message)); });
@@ -257,7 +257,7 @@ test('monthly cap refuses provider work before spending and known rejection does
   assert.equal(providerCalls, 0); assert.equal(getUsage().spent, 4_900_000); assert.equal(getUsage().reserved, 0);
   setUsage();
   await withProvider(() => new Response('not exposed', { status: 429 }), async () => {
-    await assert.rejects(api.receiveMessage(demoRequest('message', started.token, chatMessage('agent-429-0001'))), { code: 'AI_UNAVAILABLE' });
+    await assert.rejects(api.receiveMessage(demoRequest('message', started.token, chatMessage('agent-429-0001'))), { code: 'AI_RATE_LIMIT' });
   });
   assert.equal(getUsage().spent, 0); assert.equal(getUsage().reserved, 0);
   const status = database.prepare("SELECT payload FROM events WHERE type='ai' AND payload LIKE '%providerStatus%'").get();
@@ -321,7 +321,7 @@ test('configurable models require positive finite costs and reserve their bounde
     });
     assert.equal(calls, 0); assert.equal(getUsage().spent, 0);
     env.OPENAI_INPUT_MICRO_GBP_PER_TOKEN = '3'; env.OPENAI_OUTPUT_MICRO_GBP_PER_TOKEN = '12';
-    await withProvider(() => { throw new TypeError('uncertain custom model call'); }, async () => { await assert.rejects(api.receiveMessage(demoRequest('message', started.token, chatMessage('model-valid-0001'))), /uncertain custom model/); });
+    await withProvider(() => { throw new TypeError('uncertain custom model call'); }, async () => { await assert.rejects(api.receiveMessage(demoRequest('message', started.token, chatMessage('model-valid-0001'))), { code: 'DEMO_CONNECTION' }); });
     assert.equal(getUsage().spent, 518400); assert.equal(getUsage().reserved, 0);
   } finally { delete env.OPENAI_MODEL; delete env.OPENAI_INPUT_MICRO_GBP_PER_TOKEN; delete env.OPENAI_OUTPUT_MICRO_GBP_PER_TOKEN; }
 });
@@ -365,4 +365,22 @@ test('Sites identity is accepted only on reserved MCP route; service alias alway
   write.arguments.fixtureId = archive.id; write.arguments.operationId = 'platform:test:archive';
   const refused = await (await api.handleMcp(request('/mcp', identity, write))).json();
   assert.equal(refused.result.isError, true);
+});
+
+
+test('provider failures distinguish credit, credentials, throttling and service outages without exposing upstream content', async () => {
+  for (const [status, upstream, expected, wording] of [
+    [429, 'insufficient_quota', 'AI_CREDIT_LIMIT', /separate from.*£5/],
+    [401, 'invalid_api_key', 'AI_AUTH', /expired or been revoked/],
+    [429, 'rate_limit_exceeded', 'AI_RATE_LIMIT', /Wait about a minute/],
+    [403, 'permission_denied', 'AI_MODEL_ACCESS', /model access/],
+    [503, 'server_error', 'AI_UNAVAILABLE', /temporarily unavailable/],
+    [400, 'invalid_request', 'AI_REQUEST_REJECTED', /request settings/],
+  ]) {
+    const error = await api.providerFailure(Response.json({ error: { code: upstream, message: 'SECRET-UPSTREAM-CONTENT' } }, { status }));
+    assert.equal(error.code, expected); assert.match(error.message, wording);
+    assert.doesNotMatch(error.message, /SECRET-UPSTREAM-CONTENT/);
+  }
+  assert.equal((await api.providerFailure(new Response('<html>unavailable</html>', { status: 502 }))).code, 'AI_UNAVAILABLE');
+  assert.match(api.connectionFailure('AI provider', {name: 'TimeoutError'}).message, /Some details may already be saved/);
 });

@@ -9,7 +9,7 @@ const source = readFileSync(new URL('../components/DemoPhone.tsx', import.meta.u
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React } }).outputText;
 const context = { exports: {}, require: () => ({}), console };
 vm.runInNewContext(compiled, context);
-const { refreshWithCurrentToken } = context.exports;
+const { refreshWithCurrentToken, demoRequest } = context.exports;
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 
 test('late anonymous poll cannot turn a newly acquired owner into a spectator', async () => {
@@ -42,4 +42,30 @@ test('a stale-token failure does not replace current ownership with an error', a
 
 test('a current-token request failure still reaches the caller', async () => {
   await assert.rejects(refreshWithCurrentToken(() => 'same-token', async () => { throw new Error('Connection unavailable'); }, () => ({}), () => assert.fail('Failed poll must not publish')), /Connection unavailable/);
+});
+
+
+test('demo reports connection loss with recovery guidance rather than a raw fetch error', async () => {
+  context.fetch = async () => { throw new TypeError('Failed to fetch'); };
+  await assert.rejects(demoRequest('/api/demo/message', {}, 'test-token'), /process your message:.*connection.*Some details may already be saved/);
+});
+
+test('demo handles HTML gateway timeouts without leaking the body or a JSON parser error', async () => {
+  context.fetch = async () => new Response('<html>PRIVATE GATEWAY DETAILS</html>', {status: 504});
+  await assert.rejects(demoRequest('/api/demo/message', {}, 'test-token'), error => {
+    assert.match(error.message, /server took too long.*HTTP 504/);
+    assert.doesNotMatch(error.message, /PRIVATE|Unexpected token/); return true;
+  });
+});
+
+test('demo preserves actionable server explanation and adds a diagnostic code', async () => {
+  context.fetch = async () => Response.json({error: 'The AI account has no available credit.', code: 'AI_CREDIT_LIMIT'}, {status: 503});
+  await assert.rejects(demoRequest('/api/demo/message', {}, 'test-token'), /no available credit.*HTTP 503 · AI_CREDIT_LIMIT/);
+});
+
+test('demo rejects malformed success responses and still returns valid responses', async () => {
+  context.fetch = async () => Response.json(null);
+  await assert.rejects(demoRequest('/api/demo/state', undefined, 'test-token'), /unreadable response.*out of date/);
+  context.fetch = async () => Response.json({messages: []});
+  assert.deepEqual(await demoRequest('/api/demo/state', undefined, 'test-token'), {messages: []});
 });

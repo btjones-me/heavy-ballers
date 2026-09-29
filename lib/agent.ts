@@ -1,3 +1,4 @@
+import {providerFailure, connectionFailure} from './demo-errors';
 import {all, first, newId, now, run, runtimeEnv, sha256} from './db';
 import {assertSameOrigin, rateLimit} from './auth';
 import {AppError, type FixturePatch} from './types';
@@ -39,16 +40,17 @@ export async function startDemo(request:Request){
 export async function releaseDemo(request:Request){assertSameOrigin(request);await run("DELETE FROM kv WHERE key='demo:lock' AND json_extract(value,'$.token')=?",await sha256(token(request)));return {ok:true}}
 
 async function rpc<T=unknown>(origin:string,method:string,params:unknown,notification=false):Promise<T>{
- const response=await fetch(new URL('/api/mcp',origin),{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+runtimeEnv().MCP_TOKEN,'MCP-Protocol-Version':'2025-03-26'},body:JSON.stringify({jsonrpc:'2.0',...(notification?{}:{id:newId()}),method,params}),signal:AbortSignal.timeout(15_000)});
- if(!response.ok)throw new AppError('The match-report connection is temporarily unavailable.',503,'MCP_UNAVAILABLE');
+ let response:Response;
+ try{response=await fetch(new URL('/api/mcp',origin),{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+runtimeEnv().MCP_TOKEN,'MCP-Protocol-Version':'2025-03-26'},body:JSON.stringify({jsonrpc:'2.0',...(notification?{}:{id:newId()}),method,params}),signal:AbortSignal.timeout(15_000)});}catch(e){throw connectionFailure('match-report service',e)}
+ if(!response.ok)throw new AppError([401,403].includes(response.status)?'The match-report service refused access. Ask the site admin to check the server’s MCP credential.':`The match-report service returned HTTP ${response.status}. Try again shortly; if it persists, ask the site admin to check the service.`,503,'MCP_UNAVAILABLE');
  if(response.status===202)return undefined as T;
  const body=await response.json() as {result:T;error?:{message:string}};
- if(body.error)throw new Error(body.error.message);return body.result;
+ if(body.error)throw new AppError('The match-report service could not complete its request. Check the saved result and retry; if it persists, ask the site admin to check the service.',503,'MCP_REQUEST_FAILED');return body.result;
 }
 
 export async function receiveMessage(request:Request){
  assertSameOrigin(request);
- const lock=await lease();if(!lock||lock.token!==await sha256(token(request))||lock.expiresAt<=Date.now())throw new AppError('Press Join demo to take control of the conversation.',409,'DEMO_LEASE');
+ const lock=await lease();if(!lock||lock.token!==await sha256(token(request))||lock.expiresAt<=Date.now())throw new AppError('Your demo controls have expired. Press Play demo or Continue demo to reconnect, then try your message again.',409,'DEMO_LEASE');
  const input=await request.json() as ChatEvent;
  if(!input||input.conversationId!==CONVERSATION||input.fixtureId!==FIXTURE||typeof input.senderId!=='string'||!Object.hasOwn(SENDERS,input.senderId)||typeof input.messageId!=='string'||!/^[\w-]{8,80}$/.test(input.messageId)||typeof input.text!=='string'||input.text.trim().length<1||input.text.length>600||typeof input.timestamp!=='string'||!Number.isFinite(Date.parse(input.timestamp)))throw new AppError('Please enter a message of up to 600 characters with a valid sender.');
  const duplicate=await first<Row>('SELECT * FROM messages WHERE id=?',input.messageId);
@@ -71,7 +73,7 @@ export async function receiveMessage(request:Request){
   await run("UPDATE kv SET value=json_set(value,'$.expiresAt',?) WHERE key='demo:lock' AND json_extract(value,'$.token')=?",Date.now()+600_000,await sha256(token(request)));
   const origin=String(runtimeEnv().APP_ORIGIN??'');
   if(!/^https?:\/\//.test(origin))throw new AppError('The demo connection origin is not configured.',503);
-  try{await respond(input,origin);await run('UPDATE kv SET value=? WHERE key=?','done',statusKey)}catch(e){await run('UPDATE kv SET value=? WHERE key=?','failed',statusKey);await append('Heavy Ballers',e instanceof AppError?e.message:'The agent could not finish that report. The website is safe to keep using. Please try your message again.');await event('ai',{label:'Agent paused',status:'error'});throw e}
+  try{await respond(input,origin);await run('UPDATE kv SET value=? WHERE key=?','done',statusKey)}catch(e){await run('UPDATE kv SET value=? WHERE key=?','failed',statusKey);await append('Heavy Ballers',e instanceof AppError?e.message:'The agent could not finish that report. The website is safe to keep using. Please try your message again.');await event('ai',{label:'Agent paused',status:'error',result:{code:e instanceof AppError?e.code:'AGENT_FAILED',message:e instanceof AppError?e.message:'The report could not be completed. Check the saved result before retrying.'}});throw e}
   return {ok:true};
  }finally{await run("DELETE FROM kv WHERE key='demo:busy' AND value=?",busy)}
 }
@@ -105,8 +107,9 @@ async function respond(message:ChatEvent,origin:string){
    const request={model,instructions:prompt,input,tools,parallel_tool_calls:false,max_output_tokens:1200,reasoning:{effort:'minimal'},store:false};
    if(new TextEncoder().encode(JSON.stringify(request)).byteLength>24_000)throw new AppError('This conversation is too long for a safe demo request. An admin can reset the demo.',400);
    uncertain=true;
-   const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:'Bearer '+env.OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(30_000)});
-   if(!response.ok){if(response.status<500)uncertain=false;await event('ai',{label:'AI provider request failed',status:'error',providerStatus:response.status,code:'AI_UNAVAILABLE'});throw new AppError(response.status===429?'The AI provider is temporarily at its limit. Try again shortly.':'The AI connection could not complete the request. An admin can check its configuration.',503,'AI_UNAVAILABLE')}
+   let response:Response;
+   try{response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:'Bearer '+env.OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(30_000)});}catch(e){throw connectionFailure('AI provider',e)}
+   if(!response.ok){if(response.status<500)uncertain=false;const failure=await providerFailure(response);await event('ai',{label:'AI provider request failed',status:'error',providerStatus:response.status,code:failure.code,result:{message:failure.message}});throw failure}
    const result=await response.json() as ProviderResponse;
    if(result.usage){cost+=Math.ceil((result.usage.input_tokens??0)*inputRate+(result.usage.output_tokens??0)*outputRate);uncertain=false}
    const calls=(result.output??[]).filter(o=>o.type==='function_call');

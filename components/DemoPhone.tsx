@@ -18,10 +18,30 @@ const SCRIPT = [{ senderId: 'ben', text: 'We won 4–2.' }, { senderId: 'alfie',
 const normalizedText = (value: string) => value.replace(/[–—−]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 const progressFrom = (messages: Message[]) => { let count = 0; for (const step of SCRIPT) { if (messages.some(m => normalizedText(m.text) === normalizedText(step.text))) count++; else break; } return count; };
 function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
-async function demoRequest(path: string, body?: unknown, requestToken = token()) {
-  const response = await fetch(path, { cache: 'no-store', credentials: 'same-origin', headers: { 'x-demo-token': requestToken, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}) });
-  const data = await response.json() as Record<string, unknown>;
-  if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : (data.error as { message?: string })?.message || String(data.message || `The demo could not complete this request (${response.status}).`));
+export async function demoRequest(path: string, body?: unknown, requestToken = token()) {
+  const action = path.endsWith('/message') ? 'process your message' : path.endsWith('/start') ? 'start the demo' : path.endsWith('/release') ? 'release the controls' : 'refresh the conversation';
+  const recovery = body !== undefined ? 'Some details may already be saved. Check the conversation and saved result before trying again.' : 'The displayed conversation may be out of date. Reopen the drawer to reconnect.';
+  let response: Response;
+  try {
+    response = await fetch(path, { cache: 'no-store', credentials: 'same-origin', headers: { 'x-demo-token': requestToken, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}) });
+  } catch {
+    throw new Error(`Could not ${action}: the connection to the website was interrupted. Check your internet connection. ${recovery}`);
+  }
+  let data: Record<string, unknown>;
+  try {
+    const parsed: unknown = await response.json();
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Invalid response');
+    data = parsed as Record<string, unknown>;
+  } catch {
+    const reason = [504, 524].includes(response.status) ? 'the server took too long to respond' : 'the website returned an unreadable response';
+    throw new Error(`Could not ${action}: ${reason} (HTTP ${response.status}). ${recovery}`);
+  }
+  if (!response.ok) {
+    const message = typeof data.error === 'string' ? data.error : (data.error as { message?: string } | null)?.message;
+    const fallback = response.status === 429 ? 'Too many requests. Wait a minute and try again.' : response.status === 401 || response.status === 403 ? 'The request was refused. Reopen the demo and try again; if it persists, ask the site admin to check access.' : 'The website could not complete this request. Try again shortly; if it persists, contact the site admin.';
+    const code = typeof data.code === 'string' && /^[A-Z_]{1,50}$/.test(data.code) ? ` · ${data.code}` : '';
+    throw new Error(`Could not ${action}: ${message || fallback} ${recovery} (HTTP ${response.status}${code})`);
+  }
   return data;
 }
 
