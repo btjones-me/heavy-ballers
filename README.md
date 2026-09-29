@@ -29,6 +29,6 @@ npm test
 npm run build
 ```
 
-The demo changes shared data. Only an admin may reset it. Reset affects fictional Season 2 and its conversation, preserving historic records and the monthly AI budget ledger.
+Each browser tab receives a private fictional season, conversation and activity log, retained across refreshes for up to 24 hours. Reset demo in the drawer starts a fresh private season without changing anyone else’s results. The monthly £5 AI allowance remains shared across the site and cannot be reset by visitors.
 
 All source photography and branding were collected from the referenced original public website for this requested recreation. Invented chat content contains no private message history or phone numbers. Historical source records with incomplete scorers or missing shootouts are explicitly flagged.

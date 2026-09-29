@@ -1,3 +1,4 @@
+import { withDemoScope, requireDemoSnapshot } from './demo-session';
 import { runtimeEnv, sha256 } from './db';
 import { getBootstrap, updateFixture } from './league';
 import { DEMO_SEASON_ID } from './seed';
@@ -85,6 +86,10 @@ export async function handleMcp(request: Request): Promise<Response> {
   if (message.method !== 'tools/call') return rpcError(id, -32601, 'Method not found.');
   if (!params || typeof params.name !== 'string') return rpcError(id, -32602, 'A tool name is required.');
   if (!MCP_TOOLS.some(tool => tool.name === params.name)) return rpcError(id, -32602, 'Unknown tool.');
-  try { const result = await callMcpTool(params.name, params.arguments as Record<string, unknown> ?? {}); return rpc(id, { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result, isError: false }); }
+  try {
+    const scope = request.headers.get('x-demo-session');
+    if (scope && (platformAuthenticated || !/^[a-f0-9]{64}$/.test(scope))) throw new AppError('Invalid private demo context.',403);
+    if (scope) await requireDemoSnapshot(scope);
+    const result = await withDemoScope(scope ?? '', () => callMcpTool(params.name as string, params.arguments as Record<string, unknown> ?? {})); return rpc(id, { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result, isError: false }); }
   catch (error) { const known = error instanceof AppError; return rpc(id, { content: [{ type: 'text', text: known ? error.message : 'The match service is temporarily unavailable. Please retry.' }], isError: true, ...(known ? { structuredContent: { error: error.code, message: error.message } } : {}) }); }
 }

@@ -1,3 +1,4 @@
+import {runVisitorDemo, visitorScope, withDemoScope, overlayDemo, freshDemo} from '../../../lib/demo-session';
 import {ensureSeed,runtimeEnv} from '../../../lib/db';
 import {getBootstrap} from '../../../lib/league';
 import {adminState,saveRecord,undoChange,resetDemo,submitEnquiry} from '../../../lib/admin-service';
@@ -13,13 +14,14 @@ async function route(request:Request){
   await ensureSeed();
   const path=new URL(request.url).pathname.slice(5),post=request.method==='POST';
   if(Number(request.headers.get('content-length')??0)>6_000_000)throw new AppError('This upload is too large.',413);
-  if(path==='bootstrap'&&!post)return json(await getBootstrap());
+  if(path==='bootstrap'&&!post){const scope=await visitorScope(request);return json(scope?await withDemoScope(scope,()=>getBootstrap()):overlayDemo(await getBootstrap(),freshDemo()));}
   if(path==='contact'&&post){assertSameOrigin(request);return json(await submitEnquiry(await request.json(),request.headers.get('cf-connecting-ip')??'local'))}
-  if(path==='demo/state'&&!post)return json(await demoState(request));
-  if(path==='demo/start'&&post)return json(await startDemo(request));
-  if(path==='demo/present'&&post)return json(await acknowledgePresentation(request));
-  if(path==='demo/message'&&post)return json(await receiveMessage(request));
-  if(path==='demo/release'&&post)return json(await releaseDemo(request));
+  if(path==='demo/state'&&!post)return json(await visitorScope(request)?await runVisitorDemo(request,demoState,'read'):{messages:[],events:[],active:false,owner:false,busy:false,configured:!!runtimeEnv().OPENAI_API_KEY});
+  if(path==='demo/start'&&post)return json(await runVisitorDemo(request,startDemo,'start'));
+  if(path==='demo/reset'&&post)return json(await runVisitorDemo(request,startDemo,'reset'));
+  if(path==='demo/present'&&post)return json(await runVisitorDemo(request,acknowledgePresentation));
+  if(path==='demo/message'&&post)return json(await runVisitorDemo(request,receiveMessage));
+  if(path==='demo/release'&&post)return json(await runVisitorDemo(request,releaseDemo));
   if(path==='admin/login'&&post)return await login(request);
   if(path==='admin/logout'&&post)return await logout(request);
   if(path.startsWith('admin/')){

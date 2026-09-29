@@ -36,7 +36,7 @@ before(async () => {
   globalThis.__HB_TEST_ENV = { DB: db, ADMIN_PASSWORD: 'test-only-password', MCP_TOKEN: 'test-only-mcp-token', OPENAI_API_KEY: 'test-key-not-real', APP_ORIGIN: 'https://ballers.test' };
   temporary = await mkdtemp(join(tmpdir(), 'heavy-ballers-tests-'));
   const outfile = join(temporary, 'backend.mjs');
-  await build({ stdin: { contents: `export * from './lib/league'; export * from './lib/admin-service'; export * from './lib/auth'; export * from './lib/mcp'; export * from './lib/agent'; export * from './lib/report-guard'; export * from './lib/demo-errors';`, resolveDir: process.cwd() }, bundle: true, outfile, platform: 'node', format: 'esm', plugins: [{ name: 'test-cloudflare-binding', setup(build) { build.onResolve({ filter: /^cloudflare:workers$/ }, args => ({ path: args.path, namespace: 'test-runtime' })); build.onLoad({ filter: /.*/, namespace: 'test-runtime' }, () => ({ contents: 'export const env = globalThis.__HB_TEST_ENV;' })); } }] });
+  await build({ stdin: { contents: `export * from './lib/league'; export * from './lib/admin-service'; export * from './lib/auth'; export * from './lib/mcp'; export * from './lib/agent'; export * from './lib/report-guard'; export * from './lib/demo-errors'; export * from './lib/demo-session'; export {POST as httpRoute} from './app/api/[...path]/route';`, resolveDir: process.cwd() }, bundle: true, outfile, platform: 'node', format: 'esm', plugins: [{ name: 'test-cloudflare-binding', setup(build) { build.onResolve({ filter: /^cloudflare:workers$/ }, args => ({ path: args.path, namespace: 'test-runtime' })); build.onLoad({ filter: /.*/, namespace: 'test-runtime' }, () => ({ contents: 'export const env = globalThis.__HB_TEST_ENV;' })); } }] });
   api = await import(pathToFileURL(outfile).href);
 });
 after(async () => { database?.close(); if (temporary) await rm(temporary, { recursive: true }); delete globalThis.__HB_TEST_ENV; });
@@ -186,7 +186,7 @@ const providerResult = output => Response.json({ output, usage: { input_tokens: 
 const providerText = () => providerResult([{ type: 'message', content: [{ type: 'output_text', text: 'Result received.' }] }]);
 async function withProvider(handler, task, onRpc = () => {}, autoPresent = true) {
   // Existing agent tests simulate a painted live view; gate-specific tests use the real acknowledgement endpoint.
-  const presentationTimer = autoPresent ? setInterval(() => database.prepare("UPDATE kv SET value=json_set(value,'$.ready',1) WHERE key='demo:presentation'").run(), 10) : null;
+  const presentationTimer = autoPresent ? setInterval(() => database.prepare("UPDATE kv SET value=json_set(value,'$.ready',1) WHERE key='demo:presentation' OR key LIKE 'visitor:%:demo:presentation'").run(), 10) : null;
   const original = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     const target = new URL(url);
@@ -421,7 +421,7 @@ test('unacknowledged presentation times out safely and leaves the fixture unchan
   await api.resetDemo();
   await assert.rejects(api.preparePresentation({patch:{homeScore:9,awayScore:0}},'owner-hash',30),{code:'DEMO_VIEW_NOT_READY'});
   assert.equal((await api.getBootstrap()).fixtures.find(f=>f.id==='demo-gw7-1').homeScore,null);
-  assert.equal(database.prepare("SELECT value FROM kv WHERE key='demo:presentation'").get(),undefined);
+  assert.equal(database.prepare("SELECT value FROM kv WHERE key='demo:presentation' OR key LIKE 'visitor:%:demo:presentation'").get(),undefined);
 });
 
 
@@ -434,4 +434,69 @@ test('MCP protocol failure preserves HTTP status and JSON-RPC code in the develo
   const trace=state.events.find(event=>event.traceId);
   assert.equal(trace.httpStatus,200);assert.equal(trace.status,'error');assert.equal(trace.result.error.code,-32602);
   assert.doesNotMatch(JSON.stringify(trace),/upstream private diagnostic/);
+});
+
+const visitorGet = (path, token) => api.httpRoute(new Request(`https://ballers.test/api/${path}`, {headers: token ? {'x-demo-token': token} : {}}));
+const privateMatch = state => state.fixtures.find(f => f.id === 'demo-gw7-1');
+async function startVisitor() { const response = await api.httpRoute(demoRequest('start')); assert.equal(response.status, 200); return response.json(); }
+
+test('private HTTP demos isolate identical message IDs, MCP writes, logs and public data', async () => {
+  setUsage();
+  const canonical = await api.getBootstrap();
+  const a = await startVisitor(), b = await startVisitor();
+  assert.notEqual(a.token, b.token); assert.equal(a.owner, true); assert.equal(b.owner, true);
+  for (const [session, score] of [[a,4],[b,3]]) {
+    let calls=0;
+    await withProvider(() => ++calls === 1 ? providerResult([{type:'function_call',call_id:'same-call',name:'update_match_report',arguments:JSON.stringify({fixtureId:'demo-gw7-1',expectedVersion:0,patch:{homeScore:score,awayScore:2}})}]) : providerText(), async () => {
+      const result = await api.httpRoute(demoRequest('message',session.token,chatMessage('private-same-message',`We won ${score}-2.`)));
+      assert.equal(result.status,200,JSON.stringify(await result.json()));
+      const duplicate = await api.httpRoute(demoRequest('message',session.token,chatMessage('private-same-message',`We won ${score}-2.`)));
+      assert.equal((await duplicate.json()).duplicate,true);
+    });
+  }
+  const aa = await (await visitorGet('demo/state',a.token)).json(), bb = await (await visitorGet('demo/state',b.token)).json();
+  assert.equal(aa.match.homeScore,4); assert.equal(bb.match.homeScore,3);
+  assert.ok(aa.events.length>0); assert.ok(bb.events.length>0);
+  assert.ok(aa.events.every(e=>!bb.events.some(other=>other.id===e.id)));
+  assert.ok(!aa.messages.some(m=>m.text==='We won 3-2.'));
+  assert.ok(!bb.messages.some(m=>m.text==='We won 4-2.'));
+  assert.equal(privateMatch(await (await visitorGet('bootstrap',a.token)).json()).homeScore,4);
+  assert.equal(privateMatch(await (await visitorGet('bootstrap',b.token)).json()).homeScore,3);
+  assert.equal(privateMatch(await (await visitorGet('bootstrap')).json()).homeScore,null);
+  assert.deepEqual(await api.getBootstrap(),canonical);
+  const spend = {...getUsage()}; assert.ok(spend.spent>0);
+  const reset = await api.httpRoute(demoRequest('reset',a.token)); assert.equal(reset.status,200);
+  const fresh = await reset.json(); assert.notEqual(fresh.token,a.token); assert.equal(fresh.messages.length,1); assert.equal(fresh.events.length,0); assert.equal(fresh.match.homeScore,null);
+  assert.equal((await api.httpRoute(demoRequest('message',a.token,chatMessage('expired-message')))).status,401);
+  assert.equal((await (await visitorGet('demo/state',b.token)).json()).match.homeScore,3);
+  assert.deepEqual({...getUsage()},spend);
+  const oldScope=database.prepare('SELECT id FROM demo_sessions WHERE expires_at=0 ORDER BY rowid DESC LIMIT 1').get().id;
+  await assert.rejects(api.withDemoScope(oldScope,()=>api.updateFixture('demo-gw7-1',{homeScore:8,awayScore:2},1,'late-agent','late-write')), {code:'DEMO_EXPIRED'});
+  setUsage(5_000_000);
+  await withProvider(()=>{throw Error('Budget must prevent provider calls');},async()=>{
+    const blocked=await api.httpRoute(demoRequest('message',fresh.token,chatMessage('budget-private-message')));assert.equal(blocked.status,429);
+  });
+  setUsage();
+});
+
+test('rate-limited reset preserves the visitor session and its data', async()=>{
+  const session=await startVisitor();
+  database.prepare("UPDATE rate_limits SET count=30,reset_at=? WHERE key LIKE 'demo:sessions:%'").run(Date.now()+600000);
+  const denied=await api.httpRoute(demoRequest('reset',session.token));assert.equal(denied.status,429);
+  const state=await (await visitorGet('demo/state',session.token)).json();assert.equal(state.owner,true);assert.equal(state.messages.length,1);
+  database.prepare("DELETE FROM rate_limits WHERE key LIKE 'demo:sessions:%'").run();
+});
+
+test('private season CAS prevents lost updates on different fixtures and MCP scope requires server authorization', async()=>{
+  const session=await startVisitor();const scope=await api.visitorScope(demoRequest('state',session.token));
+  const results=await api.withDemoScope(scope,()=>Promise.allSettled([
+    api.updateFixture('demo-gw7-1',{homeScore:4,awayScore:2},0,'test','parallel-a'),
+    api.updateFixture('demo-gw7-2',{homeScore:3,awayScore:1},0,'test','parallel-b')
+  ]));
+  const successful=results.filter(r=>r.status==='fulfilled').length;assert.ok(successful>=1);
+  const fixture=(await api.withDemoScope(scope,()=>api.getBootstrap())).fixtures.filter(f=>f.round===7 && f.seasonId==='tuesday-demo-s2');
+  assert.equal(fixture.filter(f=>f.homeScore!==null).length,successful);
+  for(const r of results.filter(r=>r.status==='rejected')) assert.equal(r.reason.code,'STALE_VERSION');
+  const request=new Request('https://ballers.test/api/mcp',{method:'POST',headers:{'content-type':'application/json','x-demo-session':scope},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'get_match_report',arguments:{fixtureId:'demo-gw7-1'}}})});
+  assert.equal((await api.handleMcp(request)).status,401);
 });

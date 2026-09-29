@@ -83,8 +83,8 @@ export default function ArchitecturePanel() {
             <ol>
               <li><b>A player reports the result.</b> The fictional chat sends each message to the backend.</li>
               <li><b>The agent checks the details.</b> GPT-6 Luna reads the conversation, uses MCP tools and asks for missing or unclear information.</li>
-              <li><b>The league service saves valid changes.</b> Team, player, score and revision checks protect the shared records in D1.</li>
-              <li><b>The website catches up.</b> Results, standings and goalscorers refresh automatically every 2.5 seconds.</li>
+              <li><b>The league service saves valid changes.</b> Team, player, score and revision checks protect your private demo records in D1.</li>
+              <li><b>The website catches up.</b> Your results, standings and goalscorers refresh automatically. Other visitors have independent demos; Reset demo restarts only yours.</li>
             </ol>
           </section>
           <section className="hb-architecture-stack" aria-labelledby="hb-architecture-stack-title">

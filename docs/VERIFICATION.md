@@ -80,3 +80,11 @@ Local ignored `qa/` artifacts retain the public screenshot and concise result/ad
 - Mobile handovers scroll the live result into view. Delayed between-message transitions cannot override a newer gate.
 - All 35 automated tests and TypeScript checking pass, including slow overlapping refreshes, owner changes and polling recovery.
 - Actual GPT-6 Luna mobile run saved all five scripted facts through HTTP MCP: 4–2, both teams' cumulative scorers, then NetSix's shootout point. Closing/reopening and submitting a correction also saved successfully. Public season data was not reset for these checks.
+
+
+## Private visitor demos and reset — 29 September 2026
+
+- All 38 automated tests and TypeScript checking pass. Actual HTTP demo routes are covered: independent sessions, identical message and operation identifiers, isolated MCP writes and activity, anonymous clean baseline, reset expiry fences, simultaneous fixture writes and the shared AI budget.
+- A rejected rate-limited reset preserves the visitor’s current session. Reset does not clear global AI spending or modify historical data.
+- Local real GPT-6 Luna → HTTP MCP → D1 verification used Chrome and the in-app browser: Chrome saved 4–2 while the in-app browser independently saved 3–1. Reset in Chrome cleared its result, chat and traces; the other browser retained 3–1, including after reload.
+- The visitor controls now include Reset demo, with a fresh token and private fictional season for each reset. Old polling responses cannot replace the new owner or its league data.

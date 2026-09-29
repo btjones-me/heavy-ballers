@@ -58,7 +58,7 @@ export default function LiveMatchWatch({ onReady, phase }: LiveMatchWatchProps) 
       controller = new AbortController();
       const timeout = setTimeout(() => controller?.abort(), 8000);
       try {
-        const response = await fetch('/api/bootstrap', { cache: 'no-store', signal: controller.signal });
+        const response = await fetch('/api/bootstrap', { headers: { 'x-demo-token': sessionStorage.getItem('heavy-ballers-demo-token') || '' }, cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(`Live website refresh failed (HTTP ${response.status}).`);
         const next = await response.json() as Bootstrap;
         const values = signatures(next);

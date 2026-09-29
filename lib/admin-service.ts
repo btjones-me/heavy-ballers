@@ -116,7 +116,7 @@ export async function resetDemo(actor = 'admin') {
       ...demoPlayers.map(player => database.prepare('INSERT INTO players(id,team_id,data) VALUES(?,?,?)').bind(player.id, player.teamId, JSON.stringify(player))),
       ...fixtures.map(fixture => database.prepare('INSERT INTO fixtures(id,season_id,home_team_id,away_team_id,version,data) VALUES(?,?,?,?,?,?)').bind(fixture.id, fixture.seasonId, fixture.homeTeamId, fixture.awayTeamId, fixture.version, JSON.stringify(fixture))),
       database.prepare('DELETE FROM messages WHERE conversationId=?').bind('queens-pork-demo'),
-      database.prepare("DELETE FROM events WHERE type IN ('demo','ai','tool')"),
+      database.prepare("DELETE FROM events WHERE session_id='' AND type IN ('demo','ai','tool')"),
       database.prepare("DELETE FROM kv WHERE key IN ('demo:lock','demo:sequence','demo:conversation','demo:presentation')"),
       database.prepare("DELETE FROM kv WHERE key LIKE 'demo:message:%'"),
       database.prepare("UPDATE kv SET value=CAST(CAST(value AS INTEGER)+1 AS TEXT) WHERE key='revision'"),

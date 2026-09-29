@@ -8,3 +8,5 @@
 @media(prefers-reduced-motion:reduce){.hb-demo-flip-inner{transition:none}.hb-demo-flip-inner,.hb-demo-flipped .hb-demo-flip-inner{transform:none}.hb-demo-trace-face{transform:none}.hb-demo-face[aria-hidden=true]{visibility:hidden}.hb-demo-drawer{transition:none}}
 .hb-demo-drawer-wide .hb-demo-website{height:calc(min(62vh,600px) + 44px);min-height:424px}@media(max-width:800px){.hb-demo-drawer-wide .hb-demo-website{height:25dvh;min-height:170px}.hb-demo-drawer-wide .hb-demo-flip{height:45dvh;min-height:310px}.hb-demo-drawer-wide .hb-demo-stage{gap:8px}}
 .hb-trace-payload pre{max-height:110px}.hb-trace-payload pre:focus{max-height:260px}.hb-trace-payload h4{margin:9px 0 5px}.hb-trace-meta{padding-bottom:8px}
+
+.hb-demo-controls{flex-wrap:wrap}.hb-demo-reset{display:flex;align-items:center;gap:6px;padding:9px 11px;border:1px solid #c8c9c4;border-radius:6px;color:#435348;background:transparent;font-size:11px}.hb-demo-reset:hover{background:#e8ece7}.hb-demo-reset:disabled{opacity:.45}

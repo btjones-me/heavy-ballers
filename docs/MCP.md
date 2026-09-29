@@ -4,7 +4,7 @@ Service endpoint: `https://heavy-ballers-demo.btjones-me.chatgpt.site/api/mcp`
 
 Sites plugin endpoint: `https://heavy-ballers-demo.btjones-me.chatgpt.site/mcp` (Sites-managed OAuth). Both endpoints use the same protocol handler and league service. Sites reserves `/mcp` for its OAuth connection, so the backend agent and future standalone adapters use `/api/mcp` with the separate server credential.
 
-Use Streamable HTTP JSON-RPC with `Content-Type: application/json`, `Accept: application/json, text/event-stream`, and `Authorization: Bearer <MCP_TOKEN>`. Obtain the token from the private local environment file or Sites secret configuration; never put it in frontend code or a public repository. Initialization negotiates the protocol version. This server is stateless and does not require a session ID.
+Use Streamable HTTP JSON-RPC with `Content-Type: application/json`, `Accept: application/json, text/event-stream`, and `Authorization: Bearer <MCP_TOKEN>`. Obtain the token from the private local environment file or Sites secret configuration; never put it in frontend code or a public repository. Initialization negotiates the protocol version. The MCP protocol is stateless and does not require a protocol session ID. For browser demonstrations, the backend supplies an internal `x-demo-session` header containing the authenticated visitor scope. This is accepted only with the server MCP credential on `/api/mcp`; it is never a model-selected argument or accepted from Sites OAuth clients. Without this header, standalone integrations use the canonical fictional season.
 
 Tools:
 
