@@ -18,3 +18,6 @@
 .stats-grid span{color:#957039}.fixture-meta{font-size:10px}.fixture-status{font-size:11px}@media(max-width:760px){.table-scroll-hint{font-size:11px}.fixture-status{font-size:10px}}
 
 .archive-note{font-size:12px;line-height:1.7;color:#d5deea;background:#ffffff07;border-left:2px solid var(--gold);padding:12px 15px;margin:0 0 28px}
+
+.player-portrait{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background-color:#224669;background-repeat:no-repeat;color:white;font:700 12px Arial;border:2px solid #d6ab5b88;overflow:hidden;vertical-align:middle}.player-with-portrait{display:inline-flex!important;align-items:center;gap:10px}.scorers-columns p>.player-with-portrait{float:none}.pitch-player>.player-portrait{display:inline-flex}.squad-list li>.player-with-portrait{font:inherit;color:inherit}
+.pitch-player>.player-portrait{border-radius:50%;padding:0;background-color:#224669;margin-bottom:4px}.scorers-columns p>.player-with-portrait{white-space:normal;text-align:left}.squad-list .player-with-portrait{gap:6px}

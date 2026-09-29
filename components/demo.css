@@ -16,3 +16,5 @@
 @media(max-width:800px){.hb-demo-floating .hb-demo-drawer,.hb-demo-floating .hb-demo-drawer-wide{top:76px;right:10px;width:calc(100vw - 20px);max-width:calc(100vw - 20px);max-height:calc(100dvh - 90px);padding:12px}.hb-demo-floating .hb-demo-website{height:35dvh;min-height:260px}.hb-demo-floating .hb-demo-flip{height:45dvh;min-height:310px}.hb-demo-floating .hb-demo-drawer-top h2{font-size:19px}}
 .hb-demo-floating .hb-demo-drawer-top{position:sticky;top:-18px;z-index:5;background:#f6f5f1;margin:-18px -18px 0;padding:14px 18px 12px;box-shadow:0 3px 8px #18213708}
 @media(max-width:800px){.hb-demo-floating .hb-demo-drawer-top{top:-12px;margin:-12px -12px 0;padding:12px}}
+
+.hb-match-card-message img{display:block;width:100%;height:auto;border-radius:8px;margin:6px 0}.hb-match-card-message{min-width:0}.hb-match-card-download{display:block;color:#d8bd76;font-size:11px;margin:8px 0}.hb-match-card-message button{color:#d8bd76;text-decoration:underline}.hb-match-card-message p{font-size:12px}.hb-demo-bubble:has(.hb-match-card-message){max-width:96%;width:96%}

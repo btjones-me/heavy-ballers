@@ -97,7 +97,8 @@ try{
   if(i===2)assert.match(state.messages.at(-1).text,/NetSix/);
   if(i>=2)assert.deepEqual(scorerMap(fixture.homeScorers),{'qpr-alfie':2,'qpr-sam':1,'qpr-ben':1});
   if(i>=3)assert.deepEqual(scorerMap(fixture.awayScorers),{'net-leo':1,'net-jamie':1});
-  if(i===4){assert.equal(fixture.shootoutWinnerId,'net');assert.deepEqual([state.match.homePoints,state.match.awayPoints],[3,1]);assert.doesNotMatch(state.messages.at(-1).text,/which.*scorer|can.t match/i);}
+  if(i<4)assert.equal(state.messages.filter(m=>m.role==='image').length,0);
+  if(i===4){const cards=state.messages.filter(m=>m.role==='image');assert.equal(cards.length,1);const card=JSON.parse(cards[0].text);assert.equal(card.homeScore,4);assert.equal(card.awayScore,2);assert.equal(card.standings.find(r=>r.teamId==='net').points,8);assert.equal(card.homeScorers.length,3);assert.equal(card.awayScorers.length,2);assert.equal(fixture.shootoutWinnerId,'net');assert.deepEqual([state.match.homePoints,state.match.awayPoints],[3,1]);assert.doesNotMatch(state.messages.at(-1).text,/which.*scorer|can.t match/i);}
  }
  assert.equal((await saved(b)).homeScore,null);
  const lastVersion=(await saved(a)).version;
@@ -105,7 +106,7 @@ try{
  // Duplicate delivery is a no-op and makes no paid call.
  const last=(await api('demo/state',a)).messages.filter(m=>m.role==='user').at(-1);
  await api('demo/message',a,{conversationId:'queens-pork-demo',fixtureId:'demo-gw7-1',senderId:'ben',text:last.text,messageId:last.id.split(':').at(-1),timestamp:new Date().toISOString()});
- assert.equal(ledger.calls.length,beforeCalls);assert.equal((await saved(a)).version,lastVersion);
+ assert.equal(ledger.calls.length,beforeCalls);assert.equal((await saved(a)).version,lastVersion);assert.equal((await api('demo/state',a)).messages.filter(m=>m.role==='image').length,1);
  await send(b,'ben','We won 4-2.');
  let r=await send(b,'ben','Sam scored one for Queens.');assert.deepEqual(r.fixture.homeScorers,[]);assert.match(r.state.messages.at(-1).text,/Sam K|Sam R/);
  r=await send(b,'ben','Dave scored two for Queens.');assert.deepEqual(r.fixture.homeScorers,[]);assert.match(r.state.messages.at(-1).text,/Dave|squad|roster/i);

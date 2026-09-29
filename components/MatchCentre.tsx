@@ -5,6 +5,7 @@ import { Radio, RefreshCw, Trophy } from 'lucide-react';
 import { calculateGoalscorers, calculateStandings } from '../lib/league-model';
 import type { Bootstrap, Fixture } from '../lib/types';
 import './live-watch.css';
+import PlayerPortrait from './PlayerPortrait';
 
 type MatchCentreProps = { sessionToken: string; onReady: (revision: number) => void; onUnavailable: () => void };
 const MATCH_ID = 'demo-gw7-1';
@@ -105,7 +106,7 @@ export default function MatchCentre({ sessionToken, onReady, onUnavailable }: Ma
     const entries = match[`${side}Scorers`];
     const reported = entries.reduce((sum, scorer) => sum + scorer.goals, 0);
     const score = match[`${side}Score`];
-    return <div className="hb-live-scorers"><h4>{teamName(match[`${side}TeamId`])}</h4>{entries.length ? <ul>{entries.map(scorer => <li key={scorer.playerId}><span>{playerName(scorer.playerId)}</span>{value(`scorer-${scorer.playerId}`, scorer.goals)}</li>)}</ul> : <p>{score === 0 ? 'No goals' : 'Awaiting scorers'}</p>}<small>{value(`reported-${side}`, reported)}{score === null ? ' goals reported' : ` / ${score} goals confirmed`}</small></div>;
+    return <div className="hb-live-scorers"><h4>{teamName(match[`${side}TeamId`])}</h4>{entries.length ? <ul>{entries.map(scorer => <li key={scorer.playerId}><span className="player-with-portrait"><PlayerPortrait player={view?.players.find(p=>p.id===scorer.playerId)}/>{playerName(scorer.playerId)}</span>{value(`scorer-${scorer.playerId}`, scorer.goals)}</li>)}</ul> : <p>{score === 0 ? 'No goals' : 'Awaiting scorers'}</p>}<small>{value(`reported-${side}`, reported)}{score === null ? ' goals reported' : ` / ${score} goals confirmed`}</small></div>;
   };
 
   return <section className="hb-live-watch" aria-labelledby="hb-live-heading">
@@ -121,7 +122,7 @@ export default function MatchCentre({ sessionToken, onReady, onUnavailable }: Ma
       <div className="hb-live-section-title"><h3>League standings</h3><span>Derived from saved results</span></div>
       <div className="hb-live-table-wrap" tabIndex={0} role="region" aria-label="Live league standings, scroll horizontally for every statistic"><table className="hb-live-table"><thead><tr><th scope="col">#</th><th scope="col">Team</th>{[['played', 'P', 'Played'], ['goalsFor', 'GF', 'Goals for'], ['goalsAgainst', 'GA', 'Goals against'], ['goalDifference', 'GD', 'Goal difference'], ['shootoutWins', 'SO', 'Shootout wins'], ['points', 'PTS', 'Points']].map(([key, label, title]) => <th scope="col" key={key}><abbr title={title}>{label}</abbr></th>)}</tr></thead><tbody>{view.standings.map((row, index) => <tr key={row.teamId} className={[view.match.homeTeamId, view.match.awayTeamId].includes(row.teamId) ? 'hb-live-featured-team' : ''}><td>{index + 1}</td><th scope="row"><i style={{ background: view.teams.find(team => team.id === row.teamId)?.color }}/>{row.name}</th>{(['played', 'goalsFor', 'goalsAgainst', 'goalDifference', 'shootoutWins', 'points'] as const).map(statistic => <td key={statistic} className={statistic === 'points' ? 'hb-live-points' : ''}>{value(`${row.teamId}-${statistic}`, row[statistic])}</td>)}</tr>)}</tbody></table></div>
       <p className="hb-live-rules">Win {view.season.rules.win} · Draw {view.season.rules.draw} · Shootout +{view.season.rules.shootout}. Shootout goals stay out of match scores and scorer totals.</p>
-      <details className="hb-live-rankings"><summary>Season goalscorers <span>{view.rankings.length} players</span></summary><ul>{view.rankings.map(row => <li key={row.playerId}><span>{row.name}<small>{teamName(row.teamId)}</small></span>{value(`ranking-${row.playerId}`, row.goals)}</li>)}</ul></details>
+      <details className="hb-live-rankings"><summary>Season goalscorers <span>{view.rankings.length} players</span></summary><ul>{view.rankings.map(row => <li key={row.playerId}><span className="player-with-portrait"><PlayerPortrait player={view.players.find(p=>p.id===row.playerId)}/><span>{row.name}<small>{teamName(row.teamId)}</small></span></span>{value(`ranking-${row.playerId}`, row.goals)}</li>)}</ul></details>
       <footer className="hb-live-footer"><span className="hb-live-update-dot"/><span role="status">{lastUpdate}</span></footer>
     </>}
   </section>;

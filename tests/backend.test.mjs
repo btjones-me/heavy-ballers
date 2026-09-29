@@ -36,7 +36,7 @@ before(async () => {
   globalThis.__HB_TEST_ENV = { DB: db, ADMIN_PASSWORD: 'test-only-password', MCP_TOKEN: 'test-only-mcp-token', OPENAI_API_KEY: 'test-key-not-real', APP_ORIGIN: 'https://ballers.test' };
   temporary = await mkdtemp(join(tmpdir(), 'heavy-ballers-tests-'));
   const outfile = join(temporary, 'backend.mjs');
-  await build({ stdin: { contents: `export * from './lib/league'; export * from './lib/admin-service'; export * from './lib/auth'; export * from './lib/mcp'; export * from './lib/agent'; export * from './lib/report-guard'; export * from './lib/demo-errors'; export * from './lib/demo-session'; export {POST as httpRoute} from './app/api/[...path]/route';`, resolveDir: process.cwd() }, bundle: true, outfile, platform: 'node', format: 'esm', plugins: [{ name: 'test-cloudflare-binding', setup(build) { build.onResolve({ filter: /^cloudflare:workers$/ }, args => ({ path: args.path, namespace: 'test-runtime' })); build.onLoad({ filter: /.*/, namespace: 'test-runtime' }, () => ({ contents: 'export const env = globalThis.__HB_TEST_ENV;' })); } }] });
+  await build({ stdin: { contents: `export * from './lib/league'; export * from './lib/match-card'; export * from './lib/player-portraits'; export * from './lib/admin-service'; export * from './lib/auth'; export * from './lib/mcp'; export * from './lib/agent'; export * from './lib/report-guard'; export * from './lib/demo-errors'; export * from './lib/demo-session'; export {POST as httpRoute} from './app/api/[...path]/route';`, resolveDir: process.cwd() }, bundle: true, outfile, platform: 'node', format: 'esm', plugins: [{ name: 'test-cloudflare-binding', setup(build) { build.onResolve({ filter: /^cloudflare:workers$/ }, args => ({ path: args.path, namespace: 'test-runtime' })); build.onLoad({ filter: /.*/, namespace: 'test-runtime' }, () => ({ contents: 'export const env = globalThis.__HB_TEST_ENV;' })); } }] });
   api = await import(pathToFileURL(outfile).href);
 });
 after(async () => { database?.close(); if (temporary) await rm(temporary, { recursive: true }); delete globalThis.__HB_TEST_ENV; });
@@ -558,4 +558,34 @@ test('expired demo cannot hide the public league; strict iframe reads still fail
   assert.equal(strict.headers.get('X-Request-ID'), problem.requestId);
   const anonymous = await api.httpRoute(new Request('https://ballers.test/api/bootstrap/public'));
   assert.equal((await anonymous.json()).demoSessionExpired, false);
+});
+
+
+test('completed card waits for every fact and preserves score, portraits and shootout table points', async()=>{
+  const data=await api.getBootstrap(),base=api.freshDemo();Object.assign(data,base);
+  const match=privateMatch(data);assert.equal(api.makeMatchCard(data),null);
+  Object.assign(match,{homeScore:4,awayScore:2,homeScorers:[{playerId:'qpr-alfie',goals:2},{playerId:'qpr-ben',goals:2}],awayScorers:[{playerId:'net-leo',goals:2}]});
+  assert.equal(api.makeMatchCard(data),null);match.shootoutWinnerId='net';
+  const card=api.makeMatchCard(data);assert.equal(card.homeScore,4);assert.equal(card.awayScore,2);
+  assert.equal(card.standings.find(r=>r.teamId==='qpr').points,17);assert.equal(card.standings.find(r=>r.teamId==='net').points,8);
+  assert.deepEqual(card.homeScorers.map(p=>p.name),['Alfie H','Ben J']);
+  const portraits=data.players.map(api.playerPortrait);assert.equal(portraits.length,29);assert.ok(portraits.every(Boolean));
+  assert.equal(new Set(portraits.map(p=>p.src+':'+p.cell)).size,29);
+  match.homeScorers[0].goals=1;assert.equal(api.makeMatchCard(data),null);
+  Object.assign(match,{homeScore:0,awayScore:0,homeScorers:[],awayScorers:[]});assert.ok(api.makeMatchCard(data));
+});
+
+test('match image messages persist once per saved report, remain private and survive corrections as snapshots',async()=>{
+  const a=await startVisitor(),b=await startVisitor();const scope=await api.visitorScope(demoRequest('state',a.token));
+  await api.withDemoScope(scope,async()=>{
+    assert.equal(await api.appendCompletedMatchCard(),false);
+    await api.updateFixture('demo-gw7-1',{homeScore:4,awayScore:2,homeScorers:[{playerId:'qpr-alfie',goals:4}],awayScorers:[{playerId:'net-leo',goals:2}],shootoutWinnerId:'net'},0,'card-test','card-save-1');
+    assert.equal(await api.appendCompletedMatchCard(),true);assert.equal(await api.appendCompletedMatchCard(),false);
+    await api.updateFixture('demo-gw7-1',{homeScore:5,homeScorers:[{playerId:'qpr-alfie',goals:5}]},1,'card-test','card-save-2');
+    assert.equal(await api.appendCompletedMatchCard(),true);
+  });
+  const cards=(await (await visitorGet('demo/state',a.token)).json()).messages.filter(m=>m.role==='image').map(m=>JSON.parse(m.text));
+  assert.equal(cards.length,2);assert.deepEqual(cards.map(c=>c.homeScore),[4,5]);
+  assert.equal((await (await visitorGet('demo/state',b.token)).json()).messages.filter(m=>m.role==='image').length,0);
+  const reset=await (await api.httpRoute(demoRequest('reset',a.token))).json();assert.equal(reset.messages.filter(m=>m.role==='image').length,0);
 });
