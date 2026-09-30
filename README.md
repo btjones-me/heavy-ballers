@@ -2,9 +2,7 @@
 
 A recreation of the public Kensington Heavy Ballers website, with Tuesday/Saturday league archives, a fictional Tuesday Season 2, password-protected admin, persistent D1/R2 storage and a real AI → HTTP MCP → database WhatsApp-style demonstration.
 
-**Source:** `/Users/benjaminjones/repos/heavy-ballers`
-
-**Public demo:** https://heavy-ballers-demo.btjones-me.chatgpt.site
+**[Open the live website](https://heavy-ballers-demo.btjones-me.chatgpt.site)** · **[Architecture guide](docs/ARCHITECTURE.md)** · **[Full-size architecture diagram](public/assets/architecture-stack-luna.png)**
 
 **Admin:** https://heavy-ballers-demo.btjones-me.chatgpt.site/admin — initial password `heavyballers`.
 
@@ -14,6 +12,26 @@ A recreation of the public Kensington Heavy Ballers website, with Tuesday/Saturd
 - [Architecture, storage, scoring and spend controls](docs/ARCHITECTURE.md)
 - [MCP connection and future WhatsApp adapter](docs/MCP.md)
 - [Verification record](docs/VERIFICATION.md)
+
+## Architecture
+
+![Heavy Ballers architecture: React website and demo chat, Worker-hosted AI agent, authenticated HTTP MCP, shared league service, D1 database and R2 photo storage](public/assets/architecture-stack-luna.png)
+
+| Layer | Technology and responsibility |
+| --- | --- |
+| Website | React, TypeScript and Next.js App Router conventions via Vinext; public leagues, admin portal and a floating WhatsApp-style demo |
+| Backend | Cloudflare Worker hosted on Sites; API routes, sessions, validation and AI spend controls |
+| Match reporter | OpenAI GPT-6 Luna reads fragmented reports and selects tools from the HTTP MCP server |
+| League service | Shared by admin and MCP; validates scores, players and shootouts, with version checks, duplicate protection and change history |
+| Storage | D1 stores league records, private demo sessions, conversations and traces; R2 stores admin photo uploads |
+| Live presentation | The match-centre iframe reads saved results; tables and scorer rankings are calculated from those results |
+| Match image reply | On completion, the backend saves a private report snapshot; the browser renders a downloadable PNG with generated player portraits, scorers, score and updated table into the demo chat |
+
+**Data flow:** player message → Worker agent → authenticated HTTP MCP → league service → D1 → live website and match-summary image.
+
+Each visitor gets an independent fictional season. The agent's requests, tool payloads, responses and timings appear in the activity view. API credentials stay on the server. The chat is simulated; a future WhatsApp adapter can supply the same message events without changing the league rules.
+
+See the [architecture guide](docs/ARCHITECTURE.md) for storage, scoring and budget controls, and the [MCP guide](docs/MCP.md) for endpoints and integration details. On the [live site](https://heavy-ballers-demo.btjones-me.chatgpt.site), open **How it works** from the right-hand tray to explore the stack.
 
 ## Run locally
 
